@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:17
+    container_name: ecoresiduos-database
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: ecoresiduos
+      POSTGRES_DB: ecoresiduos_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backup.sql:/docker-entrypoint-initdb.d/backup.sql
+    restart: unless-stopped
+
+volumes:
+  pgdata:
