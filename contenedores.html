@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alta de Contenedores</title>
+
+  <!-- Tailwind -->
+  <link rel="stylesheet" href="../src/style.css">
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-200 p-6">
+
+  <!-- NAVBAR -->
+  <nav class="bg-green-600 dark:bg-green-800 text-white shadow p-4 flex justify-between items-center mb-6">
+    <h1 class="text-xl font-bold">♻ Alta de Contenedores</h1>
+
+    <div class="flex items-center gap-2">
+      <button id="toggleDark" class="px-3 py-1 bg-white text-gray-900 dark:bg-gray-700 dark:text-white rounded shadow">
+        🌗
+      </button>
+
+      <button id="logoutBtn" class="py-1 px-3 bg-red-500 hover:bg-red-600 rounded text-white">
+        Cerrar sesión
+      </button>
+    </div>
+  </nav>
+
+  <!-- FORMULARIO -->
+  <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-3xl mb-10">
+
+    <label class="block mb-2 font-semibold text-gray-900 dark:text-gray-200">Nombre Identificador</label>
+    <input id="nombre" type="text" class="w-full p-2 rounded bg-gray-100 dark:bg-gray-700 mb-4 text-gray-900 dark:text-gray-200">
+
+    <label class="block mb-2 font-semibold text-gray-900 dark:text-gray-200">Dirección</label>
+    <input id="direccion" type="text" class="w-full p-2 rounded bg-gray-100 dark:bg-gray-700 mb-4 text-gray-900 dark:text-gray-200">
+
+    <label class="block mb-2 font-semibold text-gray-900 dark:text-gray-200">Materiales aceptados</label>
+    <select id="materiales" multiple class="w-full p-2 rounded bg-gray-100 dark:bg-gray-700 mb-4 text-gray-900 dark:text-gray-200">
+      <option value="Plástico">Plástico</option>
+      <option value="Vidrio">Vidrio</option>
+      <option value="Metales">Metal</option>
+      <option value="Residuos peligrosos">Residuos peligrosos</option>
+      <option value="Orgánicos">Orgánicos</option>
+      <option value="Papel">Papel</option>
+      <option value="Cartón">Cartón</option>
+    </select>
+
+    <label class="block mb-2 font-semibold text-gray-900 dark:text-gray-200">Días y horarios</label>
+    <input id="horarios" type="text" class="w-full p-2 rounded bg-gray-100 dark:bg-gray-700 mb-4 text-gray-900 dark:text-gray-200">
+
+    <p class="mt-4 font-semibold text-gray-900 dark:text-gray-200">📍 Seleccione la ubicación en el mapa</p>
+    <div id="map" class="h-72 rounded-lg mt-2 mb-4"></div>
+
+    <div class="flex gap-4">
+      <div>
+        <label class="block mb-1 font-semibold text-gray-900 dark:text-gray-200">Latitud</label>
+        <input id="lat" type="text" readonly class="p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-200">
+      </div>
+
+      <div>
+        <label class="block mb-1 font-semibold text-gray-900 dark:text-gray-200">Longitud</label>
+        <input id="lng" type="text" readonly class="p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-200">
+      </div>
+    </div>
+
+    <button id="guardarBtn" class="mt-6 w-full bg-green-600 hover:bg-green-700 p-3 rounded font-bold text-white">
+      Guardar Contenedor
+    </button>
+
+    <p id="status" class="mt-4 text-lg font-semibold"></p>
+  </div>
+
+  <!-- LISTA DE CONTENEDORES CREADOS -->
+  <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-200 mb-4">Contenedores Guardados</h2>
+  <div id="contenedorLista" class="space-y-4 max-w-3xl"></div>
+
+  <!-- JS -->
+  <script type="module" src="./src/contenedores.js"></script>
+</body>
+</html>
+

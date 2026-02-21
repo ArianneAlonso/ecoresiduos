@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoResiduos - Registro</title>
+  <link rel="icon" type="image/png" href="/public/assets/favicon.png">
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-green-50 flex items-center justify-center min-h-screen">
+
+  <div class="bg-white shadow-xl rounded-3xl flex flex-col md:flex-row w-11/12 md:w-3/4 max-w-4xl overflow-hidden">
+    <!-- Imagen / Avatar -->
+    <div class="bg-green-200 flex justify-center items-center p-8 md:w-1/2">
+      <img src="/assets/avatar.png" alt="EcoResiduos personaje" class="w-72">
+    </div>
+
+    <!-- Formulario -->
+    <div class="flex flex-col justify-center p-8 md:w-1/2">
+      <h2 class="text-3xl font-bold text-gray-800 mb-6">
+        Crear cuenta <span class="text-green-600">EcoResiduos</span>
+      </h2>
+
+      <form id="registerForm" class="space-y-5">
+        <div>
+          <label class="block text-gray-700 font-medium mb-1">Usuario</label>
+          <input type="text" id="username" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 outline-none" placeholder="Nombre de usuario" required>
+        </div>
+
+        <div>
+          <label class="block text-gray-700 font-medium mb-1">Correo electrónico</label>
+          <input type="email" id="email" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 outline-none" placeholder="ejemplo@correo.com" required>
+        </div>
+
+        <div class="relative">
+          <label class="block text-gray-700 font-medium mb-1">Contraseña</label>
+          <input type="password" id="password" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 outline-none pr-10" placeholder="********" required>
+
+          <!-- Icono ojo -->
+          <button 
+            type="button" 
+            id="togglePassword"
+            class="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+          >
+            <i data-lucide="eye"></i>
+          </button>
+        </div>
+
+        <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg font-semibold transition">
+          Registrarse
+        </button>
+      </form>
+
+      <!-- 📌 Mensaje dinámico sin alert() -->
+      <p id="registerMsg" class="text-center text-gray-600 mt-3"></p>
+
+      <p class="text-center text-gray-600 mt-4">
+        ¿Ya tienes cuenta? 
+        <a href="/ecoresiduo/public/login.html" class="text-green-600 font-semibold hover:underline">Inicia sesión</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- Script JS -->
+  <script type="module" src="/src/register.js"></script>
+</body>
+</html>
