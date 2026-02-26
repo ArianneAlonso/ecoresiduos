@@ -64,6 +64,7 @@ CREATE TABLE public.usuarios (
     email character varying(80) NOT NULL,
     "contraseña" character varying(100) NOT NULL,
     rol public.rol_enum NOT NULL,
+    direccion character varying(200),
     puntos_acumulados integer DEFAULT 0 NOT NULL,
     fecha_registro timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 ); 

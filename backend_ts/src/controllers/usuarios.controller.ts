@@ -77,12 +77,12 @@ export class UsuariosController {
    */
 
   async crearUsuario(req: Request, res: Response) {
-    const { nombre, email, password } = req.body;
+    const { nombre, email, password, direccion } = req.body;
     const rol = req.body.rol || "usuario";
 
     if (!nombre || !email || !password) {
       return res.status(400).json({
-        ok: false, 
+        ok: false,
         mensaje: "Faltan campos requeridos: nombre, email y password.",
       });
     }
@@ -96,6 +96,7 @@ export class UsuariosController {
         email,
         password: hashedPassword,
         rol,
+        direccion,
       } as DeepPartial<Usuario>);
 
       await usuarioRepository.save(nuevoUsuario);
@@ -105,12 +106,12 @@ export class UsuariosController {
         {
           id: nuevoUsuario.idUsuario,
           email: nuevoUsuario.email,
-          role: nuevoUsuario.rol, // CORREGIDO: Usar 'role' en el payload
+          role: nuevoUsuario.rol,
         },
         JWT_SECRET,
         {
           expiresIn: "24h",
-        }
+        },
       );
 
       const cookieOptions: CookieOptions = {
@@ -130,7 +131,7 @@ export class UsuariosController {
     } catch (error: any) {
       if (error.code === "23505") {
         return res.status(409).json({
-          ok: false, 
+          ok: false,
           mensaje: "El email ya está registrado.",
         });
       }
@@ -138,7 +139,7 @@ export class UsuariosController {
       console.error("Error al crear usuario:", error);
       return res
         .status(500)
-        .json({ ok: false, mensaje: "Error interno del servidor" }); 
+        .json({ ok: false, mensaje: "Error interno del servidor" });
     }
   }
   /**
@@ -148,7 +149,7 @@ export class UsuariosController {
 
   public iniciarSesion = async (
     req: Request,
-    res: Response
+    res: Response,
   ): Promise<Response> => {
     const { email, password } = req.body;
 
@@ -201,7 +202,7 @@ export class UsuariosController {
         const token = jwt.sign(
           { id: usuario.idUsuario, email: usuario.email, role: usuario.rol }, // CORREGIDO: Usar 'role' en el payload
           JWT_SECRET,
-          { expiresIn: "24h" }
+          { expiresIn: "24h" },
         );
 
         const cookieOptions: CookieOptions = {
@@ -209,7 +210,7 @@ export class UsuariosController {
           secure: isProduction,
           maxAge: 24 * 60 * 60 * 1000,
           sameSite: isProduction ? "none" : "lax",
-          path: "/"
+          path: "/",
         };
 
         res.cookie("authToken", token, cookieOptions); // 🛑 Aquí se "devuelve" el token via cookie
@@ -244,13 +245,17 @@ export class UsuariosController {
         if (!err) {
           res.clearCookie(process.env.SESSION_NAME || "connect.sid");
         }
-        
+
         // RESPUESTA MODIFICADA PARA CUMPLIR EL FORMATO SOLICITADO
-        return res.status(200).json({ ok: true, mensaje: "Sesión cerrada exitosamente" });
+        return res
+          .status(200)
+          .json({ ok: true, mensaje: "Sesión cerrada exitosamente" });
       });
     } catch (error) {
       console.error("Error al cerrar sesión :", error);
-      return res.status(500).json({ ok: false, mensaje: "Error interno del servidor" });
+      return res
+        .status(500)
+        .json({ ok: false, mensaje: "Error interno del servidor" });
     }
   }
 
@@ -271,8 +276,8 @@ export class UsuariosController {
 
     // Esta línea es de fallback, SessionValidator ya debería haber enviado un 401 si no hay usuario.
     return res.status(401).json({
-        ok: false,
-        mensaje: "Usuario no autenticado."
+      ok: false,
+      mensaje: "Usuario no autenticado.",
     });
   }
 }
