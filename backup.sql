@@ -153,6 +153,18 @@ ALTER SEQUENCE public.entregas_materiales_id_entrega_seq OWNED BY public.entrega
 ALTER TABLE ONLY public.entregas_materiales ALTER COLUMN id_entrega SET DEFAULT nextval('public.entregas_materiales_id_entrega_seq'::regclass);
 ALTER TABLE ONLY public.entregas_materiales ADD CONSTRAINT entregas_materiales_pkey PRIMARY KEY (id_entrega);
 
+ALTER TABLE public.entregas_materiales 
+ADD COLUMN IF NOT EXISTS detalle_materiales text,
+ADD COLUMN IF NOT EXISTS tipo_envase character varying(100),
+ADD COLUMN IF NOT EXISTS direccion character varying(255),
+ADD COLUMN IF NOT EXISTS horario_preferencia character varying(100),
+ADD COLUMN IF NOT EXISTS fecha_solicitud timestamp without time zone DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE public.entregas_materiales ALTER COLUMN id_material DROP NOT NULL;
+ALTER TABLE public.entregas_materiales ALTER COLUMN peso_kg DROP NOT NULL;
+ALTER TABLE public.entregas_materiales ALTER COLUMN puntos_ganados DROP NOT NULL;
+ALTER TABLE public.entregas_materiales ALTER COLUMN peso_kg SET DEFAULT 0;
+ALTER TABLE public.entregas_materiales ALTER COLUMN puntos_ganados SET DEFAULT 0;
 
 ---
 

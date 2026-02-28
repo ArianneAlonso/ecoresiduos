@@ -1,177 +1,233 @@
-import type { Request, Response } from "express";
+import type { Response } from "express";
 import { AppDataSource } from "../data-source";
-import { EntregaMaterial } from "../entidades/EntregaMaterial";
-import { PuntoEcologico, TipoTransaccion } from "../entidades/PuntoEcologico";
+import { EntregaMaterial, EstadoPuntos } from "../entidades/EntregaMaterial";
 import { Usuario } from "../entidades/Usuarios";
-import { Material } from "../entidades/Material";
 import type { AuthenticatedRequest } from "../interfaces/AutenticatedRequest";
 import { Repository } from "typeorm";
 
-// Asumiendo que la entidad Material tiene una columna 'puntosPorKg'
-interface MaterialConPuntos extends Material {
-  puntosPorKg: number;
-}
-
 export class EntregasController {
-  // Definimos repositorios como propiedades de la instancia
   private readonly entregaRepository: Repository<EntregaMaterial> =
     AppDataSource.getRepository(EntregaMaterial);
   private readonly usuarioRepository: Repository<Usuario> =
-    AppDataSource.getRepository(Usuario); // Se mantiene el cast de repositorio si la entidad Material no tiene 'puntosPorKg' definido explícitamente
-  private readonly materialRepository: Repository<MaterialConPuntos> =
-    AppDataSource.getRepository(Material) as Repository<MaterialConPuntos>;
+    AppDataSource.getRepository(Usuario);
 
+  /**
+   * POST /entregas
+   * Crea una solicitud de retiro desde la App Mobile
+   */
   public crearEntrega = async (
     req: AuthenticatedRequest,
-    res: Response
+    res: Response,
   ): Promise<void> => {
-    const idUsuario = req.user!.id; // El frontend aún debe enviar el nombre del material, pero lo usaremos para buscar el ID
-    const { 
-      idContenedor, 
-      materialNombre, 
-      pesoKg, 
-      latitud, 
-      longitud 
-    } = req.body;
-
-   // 1. VALIDACIÓN DE DATOS REQUERIDOS
-    if (!materialNombre || !pesoKg || pesoKg <= 0) {
-      res
-        .status(400)
-        .json({ message: "Datos de entrega incompletos o inválidos (materialNombre, pesoKg)." });
-      return;
-    } 
-    
-    // 2. VALIDACIÓN DE UBICACIÓN (Nuevo: Requerido si no hay Contenedor)
-    // Si no se proporciona un idContenedor, DEBEN proporcionarse latitud y longitud.
-    if (!idContenedor && (!latitud || !longitud)) {
-        res.status(400).json({ 
-          message: "Para registrar una entrega, debe proporcionar un ID de contenedor O las coordenadas (latitud/longitud) del punto de entrega a domicilio." 
-        });
-        return;
-    }
-
-    // 3. OBTENER ID DEL MATERIAL Y TASA DE PUNTOS
-    const materialInfo = await this.materialRepository.findOne({
-      where: { nombre: materialNombre },
-      select: [
-        "idMaterial" as keyof MaterialConPuntos,
-        "puntosPorKg" as keyof MaterialConPuntos,
-      ],
-    });
-
-    if (!materialInfo) {
-      res
-        .status(400)
-        .json({ message: `Material '${materialNombre}' no reconocido.` });
-      return;
-    } 
-
-    const tasaPuntos = materialInfo.puntosPorKg || 0;
-
-    if (tasaPuntos === 0) {
-      res
-        .status(400)
-        .json({ message: `Material '${materialNombre}' no genera puntos.` });
-      return;
-    }
-    const puntosGanados = Math.floor(pesoKg * tasaPuntos);
-
-    if (puntosGanados === 0) {
-      res
-        .status(400)
-        .json({ message: "El peso es insuficiente para ganar puntos." });
-      return;
-    
-    } // 2. Iniciar Transacción
-
-    const queryRunner = AppDataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
     try {
-      // A. Crear Entrega usando idMaterial, idContenedor y COORDENADAS
-      const nuevaEntrega = this.entregaRepository.create({
+      const idUsuario = req.user!.id;
+      const {
+        materiales, // Array: ["Plástico", "Vidrio"]
+        tipoEnvase, // String: "bolsa-consorcio"
+        direccion, // String: "Av. Principal 123"
+        horarioPreferencia, // String: "lunes-mañana"
+        latitud,
+        longitud,
+      } = req.body;
+
+      // 1. Validaciones básicas de la solicitud
+      if (!materiales || materiales.length === 0) {
+        res
+          .status(400)
+          .json({ message: "Debe seleccionar al menos un material." });
+        return;
+      }
+
+      if (!direccion || !horarioPreferencia) {
+        res
+          .status(400)
+          .json({ message: "Dirección y horario son obligatorios." });
+        return;
+      }
+
+      // 2. Creamos el registro en la base de datos
+      // Nota: pesoKg y puntosGanados inician en 0 hasta que el recolector los valide
+      const nuevaSolicitud = this.entregaRepository.create({
         idUsuario,
-        idContenedor: idContenedor || null,
-        idMaterial: materialInfo.idMaterial,
-        pesoKg,
-        puntosGanados,
-        latitud: latitud || null,    // <-- ¡Guardando la latitud!
-        longitud: longitud || null,  // <-- ¡Guardando la longitud!
+        detalleMateriales: materiales.join(", "), // Guardamos la lista como texto
+        tipoEnvase,
+        direccion,
+        horarioPreferencia,
+        latitud: latitud || null,
+        longitud: longitud || null,
+        estadoPuntos: EstadoPuntos.PENDIENTE,
+        pesoKg: 0,
+        puntosGanados: 0,
+        fechaSolicitud: new Date(),
       });
-      const entregaGuardada = await queryRunner.manager.save(nuevaEntrega); 
 
-      // B. Registrar Puntos (sin cambios)
-      const nuevoPunto = queryRunner.manager.create(PuntoEcologico, {
-        idUsuario,
-        tipoTransaccion: TipoTransaccion.ENTREGA,
-        puntos: puntosGanados,
-        idReferencia: entregaGuardada.idEntrega,
-      });
-      await queryRunner.manager.save(nuevoPunto); 
-
-      // C. Actualizar Saldo (sin cambios)
-      await queryRunner.manager.increment(
-        Usuario,
-        { idUsuario: idUsuario },
-        "puntosAcumulados",
-        puntosGanados
-      ); 
-
-      // 5. Finalizar Transacción
-      await queryRunner.commitTransaction();
+      const solicitudGuardada =
+        await this.entregaRepository.save(nuevaSolicitud);
 
       res.status(201).json({
-        message: "Entrega registrada y puntos otorgados.",
-        puntos: puntosGanados,
+        ok: true,
+        message:
+          "¡Solicitud de retiro creada! Pronto un recolector pasará por tu domicilio.",
+        data: solicitudGuardada,
       });
     } catch (error) {
-      // 4. Manejo de errores y rollback
-      await queryRunner.rollbackTransaction();
-      console.error("Error al registrar la entrega:", error);
+      console.error("Error al crear solicitud de entrega:", error);
       res
         .status(500)
-        .json({ message: "Error interno al procesar la entrega." });
-    } finally {
-      await queryRunner.release();
+        .json({ message: "Error interno al procesar la solicitud." });
     }
-  }; // Las siguientes funciones usan relaciones para obtener datos detallados
+  };
 
+  /**
+   * GET /entregas/mis-entregas
+   * Lista el historial de solicitudes del usuario logueado
+   */
   public getEntregasByUsuario = async (
     req: AuthenticatedRequest,
-    res: Response
+    res: Response,
   ): Promise<void> => {
     try {
       const idUsuario = req.user!.id;
 
       const entregas = await this.entregaRepository.find({
         where: { idUsuario: idUsuario },
-        order: { fechaEntrega: "DESC" },
-        relations: ["contenedor", "material"],
+        order: { fechaSolicitud: "DESC" },
       });
 
-      res.status(200).json(entregas);
+      res.status(200).json({
+        ok: true,
+        entregas,
+      });
     } catch (error) {
       console.error("Error al obtener entregas del usuario:", error);
-      res.status(500).json({ message: "Error interno del servidor." });
+      res.status(500).json({ message: "Error al obtener tu historial." });
     }
   };
 
+  /**
+   * PATCH /entregas/:id/validar (PARA EL ADMINISTRADOR)
+   * El recolector pesa la bolsa y asigna los puntos reales
+   */
+  public validarEntrega = async (
+    req: AuthenticatedRequest,
+    res: Response,
+  ): Promise<void> => {
+    const { id } = req.params;
+    const { pesoReal, puntosCalculados } = req.body;
+
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const entrega = await queryRunner.manager.findOne(EntregaMaterial, {
+        where: { idEntrega: Number(id) },
+      });
+
+      if (!entrega || entrega.estadoPuntos !== "pendiente") {
+        res
+          .status(404)
+          .json({ message: "Solicitud no encontrada o ya procesada." });
+        return;
+      }
+
+      // 1. Actualizar la entrega
+      entrega.pesoKg = pesoReal;
+      entrega.puntosGanados = puntosCalculados;
+      entrega.estadoPuntos = EstadoPuntos.CONFIRMADO;
+      entrega.fechaEntrega = new Date();
+      await queryRunner.manager.save(entrega);
+
+      // 2. Sumar puntos al perfil del usuario
+      await queryRunner.manager.increment(
+        Usuario,
+        { idUsuario: entrega.idUsuario },
+        "puntosAcumulados",
+        puntosCalculados,
+      );
+
+      await queryRunner.commitTransaction();
+      res
+        .status(200)
+        .json({ message: "Entrega completada y puntos asignados." });
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      res.status(500).json({ message: "Error al validar la entrega." });
+    } finally {
+      await queryRunner.release();
+    }
+  };
   public getAllEntregas = async (
-    req: Request,
-    res: Response
+    req: any, // Puedes usar Request de express
+    res: Response,
   ): Promise<void> => {
     try {
       const entregas = await this.entregaRepository.find({
-        order: { fechaEntrega: "DESC" },
-        relations: ["usuario", "contenedor", "material"],
+        order: { fechaSolicitud: "DESC" },
+        // Traemos los datos del usuario para que el admin sepa de quién es
+        relations: ["usuario"],
       });
 
-      res.status(200).json(entregas);
+      res.status(200).json({
+        ok: true,
+        entregas,
+      });
     } catch (error) {
       console.error("Error al obtener todas las entregas:", error);
-      res.status(500).json({ message: "Error interno del servidor." });
+      res.status(500).json({ message: "Error al obtener el listado global." });
+    }
+  };
+  public confirmarEntrega = async (
+    req: AuthenticatedRequest,
+    res: Response,
+  ): Promise<void> => {
+    const { id } = req.params;
+    const { pesoReal, puntosAOtorgar } = req.body;
+
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const entrega = await queryRunner.manager.findOne(EntregaMaterial, {
+        where: { idEntrega: Number(id) },
+      });
+
+      if (!entrega || entrega.estadoPuntos !== EstadoPuntos.PENDIENTE) {
+        res
+          .status(404)
+          .json({ message: "Solicitud no encontrada o ya procesada." });
+        return;
+      }
+
+      // 1. Actualizamos la solicitud
+      entrega.pesoKg = pesoReal;
+      entrega.puntosGanados = puntosAOtorgar;
+      entrega.estadoPuntos = EstadoPuntos.CONFIRMADO;
+      entrega.fechaEntrega = new Date();
+      await queryRunner.manager.save(entrega);
+
+      // 2. Acreditamos los puntos al usuario
+      await queryRunner.manager.increment(
+        Usuario,
+        { idUsuario: entrega.idUsuario },
+        "puntosAcumulados",
+        puntosAOtorgar,
+      );
+
+      await queryRunner.commitTransaction();
+      res
+        .status(200)
+        .json({
+          ok: true,
+          message: "Entrega confirmada y puntos acreditados.",
+        });
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error(error);
+      res.status(500).json({ message: "Error al confirmar la entrega." });
+    } finally {
+      await queryRunner.release();
     }
   };
 }

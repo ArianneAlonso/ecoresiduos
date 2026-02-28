@@ -30,7 +30,7 @@ export class Usuario {
   @Column({ name: "contraseña", type: "varchar", length: 100, select: false })
   password!: string;
 
-  @Column({ type: "varchar", length: 200, nullable: true })
+  @Column({ name: "direccion", type: "varchar", length: 200, nullable: true })
   direccion!: string;
 
   @Column({ name: "puntos_acumulados", type: "integer", default: 0 })

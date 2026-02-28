@@ -30,7 +30,7 @@ AppDataSource.initialize()
     app.use(
       cors({
         // Esto permite que el frontend de desarrollo (http://localhost:5173) acceda al backend.
-        origin: "http://localhost:5173",
+        origin: true,
         // Esto es ESENCIAL para que las cookies de sesión (connect.sid y authToken) sean aceptadas.
         credentials: true,
       }),

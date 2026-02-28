@@ -49,7 +49,7 @@ export class UsuariosController {
     if (!idParam) {
       return res
         .status(400)
-        .json({ mensaje: "El ID proporcionado no es válido." });
+        .json({ ok: false, mensaje: "El ID proporcionado no es válido." });
     }
 
     const id = Number(idParam);
@@ -57,23 +57,44 @@ export class UsuariosController {
     if (isNaN(id)) {
       return res
         .status(400)
-        .json({ mensaje: "El ID proporcionado no es válido." });
+        .json({ ok: false, mensaje: "El ID proporcionado no es válido." });
     }
 
     try {
-      const usuario = await usuarioRepository.findOneBy({ idUsuario: id });
+      // Buscamos al usuario seleccionando explícitamente los campos necesarios
+      const usuario = await usuarioRepository.findOne({
+        where: { idUsuario: id },
+        select: [
+          "idUsuario",
+          "nombre",
+          "email",
+          "rol",
+          "puntosAcumulados",
+          "direccion",
+          "fechaRegistro",
+        ],
+      });
+
       if (!usuario) {
-        return res.status(404).json({ mensaje: "Usuario no encontrado" });
+        return res
+          .status(404)
+          .json({ ok: false, mensaje: "Usuario no encontrado" });
       }
-      return res.status(200).json(usuario);
+
+      // Enviamos la respuesta con una estructura consistente
+      return res.status(200).json({
+        ok: true,
+        user: usuario,
+      });
     } catch (error) {
       console.error("Error al obtener usuario por ID:", error);
-      return res.status(500).json({ mensaje: "Error interno del servidor" });
+      return res
+        .status(500)
+        .json({ ok: false, mensaje: "Error interno del servidor" });
     }
   }
   /**
-   * POST /usuarios/registrar - Crea un nuevo usuario (Registro).
-   * RESPUESTA CONSISTENTE: Ahora devuelve { ok: true, role: ..., mensaje: ... }
+   * POST /usuarios/register - Crea un nuevo usuario (Registro).
    */
 
   async crearUsuario(req: Request, res: Response) {
@@ -264,6 +285,7 @@ export class UsuariosController {
    *
    * Utiliza el tipado AuthenticatedRequest que garantiza que req.user ya está disponible.
    */
+
   public verificarSesion(req: AuthenticatedRequest, res: Response) {
     // Si la solicitud llega aquí, req.user está garantizado por SessionValidator.
     if (req.user) {
@@ -278,6 +300,21 @@ export class UsuariosController {
     return res.status(401).json({
       ok: false,
       mensaje: "Usuario no autenticado.",
+    });
+  }
+
+  public verificarUsuario(req: AuthenticatedRequest, res: Response) {
+    // Si la solicitud llega aquí, req.user está garantizado por SessionValidator.
+    if (req.user) {
+      return res.status(200).json({
+        ok: true,
+        user: req.user, // Aquí debe ir el id, nombre, email, rol y direccion
+      });
+    }
+
+    return res.status(401).json({
+      ok: false,
+      mensaje: "No hay sesión activa",
     });
   }
 }
