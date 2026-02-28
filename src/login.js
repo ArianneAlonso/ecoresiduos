@@ -58,9 +58,18 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
 
 // 🔹 Función para mostrar errores
 function mostrarError(msg) {
-  const box = document.getElementById("mensajeError");
+  const box = document.getElementById("loginError");
+
+  if(!box) {
+    console.error("No se encontró el elemento loginError");
+    return;
+  }
+
+  
   box.textContent = msg;
   box.classList.remove("hidden");
+
+
 
   // Opcional: ocultar error después de 5 segundos
   setTimeout(() => box.classList.add("hidden"), 5000);

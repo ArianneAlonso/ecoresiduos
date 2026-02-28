@@ -97,7 +97,31 @@ cargarDashboard();
 // ========================
 // LOGOUT
 // ========================
-async function logout() {
-  await fetch("http://localhost:3000/usuarios/logout", { credentials: "include" });
-  window.location.href = "/index.html";
+
+async function logoutUser() {
+  try {
+    await fetch("http://localhost:3000/usuarios/logout", {
+      method: "POST",
+      credentials: "include"
+    });
+
+    window.location.href = "/index.html";
+
+  } catch (error) {
+    console.error("Error cerrando sesión:", error);
+  }
 }
+
+// ========================
+// CONECTAR BOTÓN LOGOUT
+// ========================
+document.addEventListener("DOMContentLoaded", () => {
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      await logoutUser();
+    });
+  }
+});

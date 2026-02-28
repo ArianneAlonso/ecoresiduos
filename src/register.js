@@ -9,6 +9,7 @@ if (window.lucide) {
 // 👁️ Toggle mostrar / ocultar contraseña
 const passwordInput = document.getElementById("password");
 const togglePasswordBtn = document.getElementById("togglePassword");
+
 let showing = false;
 
 togglePasswordBtn.addEventListener("click", () => {
@@ -23,10 +24,10 @@ togglePasswordBtn.addEventListener("click", () => {
   if (window.lucide) lucide.createIcons();
 });
 
-// 📌 Contenedor para mostrar mensajes sin usar alert()
+// 📌 Contenedor de mensajes
 const registerMsg = document.getElementById("registerMsg");
 
-// 📝 Formulario de registro
+// 📝 Formulario
 const registerForm = document.getElementById("registerForm");
 
 registerForm.addEventListener("submit", async (e) => {
@@ -34,7 +35,15 @@ registerForm.addEventListener("submit", async (e) => {
 
   const nombre = document.getElementById("username").value.trim();
   const email = document.getElementById("email").value.trim();
+  const direccion = document.getElementById("direccion").value.trim();
   const password = document.getElementById("password").value.trim();
+
+  // Validación básica frontend
+  if (direccion.length > 200) {
+    registerMsg.textContent = "La dirección no puede superar los 200 caracteres.";
+    registerMsg.className = "text-red-600 text-center mt-3";
+    return;
+  }
 
   registerMsg.textContent = "Procesando...";
   registerMsg.className = "text-blue-600 text-center mt-3";
@@ -42,14 +51,21 @@ registerForm.addEventListener("submit", async (e) => {
   try {
     const response = await fetch("http://localhost:3000/usuarios/register", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre, email, password })
+      headers: { 
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ 
+        nombre, 
+        email, 
+        password, 
+        direccion 
+      })
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      registerMsg.textContent = data.message || "Error al registrarse";
+      registerMsg.textContent = data.mensaje || "Error al registrarse";
       registerMsg.className = "text-red-600 text-center mt-3";
       return;
     }
@@ -57,14 +73,13 @@ registerForm.addEventListener("submit", async (e) => {
     registerMsg.textContent = "Registro exitoso. Redirigiendo...";
     registerMsg.className = "text-green-600 text-center mt-3";
 
-    // 🟢 Espera un segundo y redirige
     setTimeout(() => {
       window.location.href = "/ecoresiduo/public/login.html";
-    }, 1000);
+    }, 1200);
 
   } catch (error) {
+    console.error(error);
     registerMsg.textContent = "Error de conexión con el servidor";
     registerMsg.className = "text-red-600 text-center mt-3";
-    console.error(error);
   }
 });

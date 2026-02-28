@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // LOGOUT FUNCIONAL
   // ========================
   logoutBtn.addEventListener("click", async () => {
+
     try {
       const res = await fetch("http://localhost:3000/usuarios/logout", {
         method: "POST",

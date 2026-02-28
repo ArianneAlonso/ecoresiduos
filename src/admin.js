@@ -1,5 +1,7 @@
 import './style.css';
 // Obtener elementos
+document.addEventListener("DOMContentLoaded", () => {
+
 const welcome = document.getElementById("welcomeAdmin");
 const userTable = document.getElementById("userTable");
 const logoutBtn = document.getElementById("logoutBtn");
@@ -61,13 +63,24 @@ async function cargarUsuarios() {
 }
 
 // 3️⃣ LOGOUT
+if(logoutBtn) {
 logoutBtn.addEventListener("click", async () => {
+  
+  try {
   await fetch("http://localhost:3000/usuarios/logout", {
     method: "POST",
     credentials: "include"
   });
-  window.location.href = "/login.html";
-});
 
+  window.location.href = "/login.html";
+
+
+} catch (error){
+  console.error("Error cerrando sesión", error);
+}
+});
+}
 // Ejecutar validación al cargar
 validarSesion();
+
+});
