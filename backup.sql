@@ -184,6 +184,21 @@ ALTER TABLE ONLY public.canjes_premios ALTER COLUMN id_canje SET DEFAULT nextval
 ALTER TABLE ONLY public.canjes_premios ADD CONSTRAINT canjes_premios_pkey PRIMARY KEY (id_canje);
 
 ---
+-- Tabla intermedia para la relación Many-to-Many
+CREATE TABLE public.usuario_eventos (
+    id_usuario integer NOT NULL,
+    id_evento integer NOT NULL,
+    fecha_asistencia timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT usuario_eventos_pkey PRIMARY KEY (id_usuario, id_evento),
+    CONSTRAINT usuario_eventos_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES public.usuarios(id_usuario) ON DELETE CASCADE,
+    CONSTRAINT usuario_eventos_id_evento_fkey FOREIGN KEY (id_evento) REFERENCES public.eventos_ambientales(id_evento) ON DELETE CASCADE
+);
+
+ALTER TABLE public.usuario_eventos OWNER TO admin;
+
+ALTER TABLE ONLY public.canjes_premios
+    ADD CONSTRAINT canjes_premios_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES public.usuarios(id_usuario) ON DELETE CASCADE,
+    ADD CONSTRAINT canjes_premios_id_premio_fkey FOREIGN KEY (id_premio) REFERENCES public.premios(id_premio) ON DELETE RESTRICT;
 
 -- Tabla: puntos_ecologicos
 CREATE TABLE public.puntos_ecologicos (
