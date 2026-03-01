@@ -5,9 +5,10 @@ import {
   CreateDateColumn,
   Unique,
   OneToMany,
+  ManyToMany,
 } from "typeorm";
 import { EntregaMaterial } from "./EntregaMaterial";
-// import { ParticipacionEvento } from "./ParticipacionEvento"; <--- ELIMINADO
+import { EventoAmbiental } from "./EventoAmbiental";
 
 export enum UserRole {
   USUARIO = "usuario",
@@ -54,7 +55,6 @@ export class Usuario {
   @OneToMany(() => EntregaMaterial, (entrega) => entrega.usuario)
   entregas!: EntregaMaterial[];
 
-  // Relación de participación en eventos ELIMINADA temporalmente
-  // @OneToMany(() => ParticipacionEvento, participacion => participacion.usuario)
-  // participacionesEventos!: ParticipacionEvento[];
+  @ManyToMany(() => EventoAmbiental, (evento) => evento.usuarios)
+  eventos!: EventoAmbiental[];
 }

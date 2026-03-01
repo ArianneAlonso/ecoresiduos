@@ -1,163 +1,224 @@
-import type { Request, Response } from 'express';
-import { AppDataSource } from '../data-source';
-import { EventoAmbiental } from '../entidades/EventoAmbiental'; 
-import { MoreThanOrEqual } from 'typeorm';
+import type { Request, Response } from "express";
+import { AppDataSource } from "../data-source";
+import { EventoAmbiental } from "../entidades/EventoAmbiental";
+import { MoreThanOrEqual } from "typeorm";
 import type { DeepPartial } from "typeorm";
+import type { AuthenticatedRequest } from "../interfaces/AutenticatedRequest";
 
 const eventRepository = AppDataSource.getRepository(EventoAmbiental);
 
 export class EventosController {
-    
-    // ----------------------------------------------------
-    // OBTENER TODOS LOS EVENTOS (Público)
-    // ----------------------------------------------------
-    public getEvents = async (req: Request, res: Response) => {
-        try {
-            // upcoming es de tipo string | string[] | undefined.
-            const { upcoming } = req.query; 
-            let where: any = {};
+  // ----------------------------------------------------
+  // OBTENER TODOS LOS EVENTOS (Público)
+  // ----------------------------------------------------
+  public getEvents = async (req: Request, res: Response) => {
+    try {
+      // upcoming es de tipo string | string[] | undefined.
+      const { upcoming } = req.query;
+      let where: any = {};
 
-            // Filtro para próximos eventos (upcoming=true)
-            if (upcoming === 'true') {
-                where.fecha = MoreThanOrEqual(new Date());
-            }
+      // Filtro para próximos eventos (upcoming=true)
+      if (upcoming === "true") {
+        where.fecha = MoreThanOrEqual(new Date());
+      }
 
-            const events = await eventRepository.find({
-                where: where,
-                order: {
-                    fecha: 'ASC' // Ordenar por fecha, los más próximos primero
-                }
-            });
+      const events = await eventRepository.find({
+        where: where,
+        order: {
+          fecha: "ASC", // Ordenar por fecha, los más próximos primero
+        },
+      });
 
-            return res.json({ ok: true, data: events });
-        } catch (error: any) {
-            console.error('Error al obtener eventos:', error);
-            return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor.' });
-        }
-    };
+      return res.json({ ok: true, data: events });
+    } catch (error: any) {
+      console.error("Error al obtener eventos:", error);
+      return res
+        .status(500)
+        .json({ ok: false, mensaje: "Error interno del servidor." });
+    }
+  };
 
-    // ----------------------------------------------------
-    // OBTENER DETALLE DE UN EVENTO POR ID (Público)
-    // ----------------------------------------------------
-    public getEventById = async (req: Request, res: Response) => {
-        try {
-            // ** CORRECCIÓN: Usar req.params.id as string **
-            const id = parseInt(req.params.id as string);
-            
-            // La ruta ya garantiza que 'id' existe, pero verificamos que sea un número válido.
-            if (isNaN(id)) {
-                return res.status(400).json({ ok: false, mensaje: 'ID de evento inválido.' });
-            }
-            
-            const event = await eventRepository.findOneBy({ idEvento: id });
+  // ----------------------------------------------------
+  // OBTENER DETALLE DE UN EVENTO POR ID (Público)
+  // ----------------------------------------------------
+  public getEventById = async (req: Request, res: Response) => {
+    try {
+      // ** CORRECCIÓN: Usar req.params.id as string **
+      const id = parseInt(req.params.id as string);
 
-            if (!event) {
-                return res.status(404).json({ ok: false, mensaje: 'Evento no encontrado.' });
-            }
+      // La ruta ya garantiza que 'id' existe, pero verificamos que sea un número válido.
+      if (isNaN(id)) {
+        return res
+          .status(400)
+          .json({ ok: false, mensaje: "ID de evento inválido." });
+      }
 
-            return res.json({ ok: true, data: event });
-        } catch (error: any) {
-            console.error('Error al obtener evento por ID:', error);
-            return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor.' });
-        }
-    };
+      const event = await eventRepository.findOneBy({ idEvento: id });
 
-    // ----------------------------------------------------
-    // CREAR NUEVO EVENTO (Solo Admin/Operador)
-    // ----------------------------------------------------
-    public createEvent = async (req: Request, res: Response) => {
-        try {
-            const { nombre, descripcion, fecha, ubicacion, puntosOtorgados, latitud, longitud } = req.body;
+      if (!event) {
+        return res
+          .status(404)
+          .json({ ok: false, mensaje: "Evento no encontrado." });
+      }
 
-            if (!nombre || !fecha || puntosOtorgados === undefined) { // Revisar puntosOtorgados
-                return res.status(400).json({ ok: false, mensaje: 'Faltan campos obligatorios: nombre, fecha y puntosOtorgados.' });
-            }
+      return res.json({ ok: true, data: event });
+    } catch (error: any) {
+      console.error("Error al obtener evento por ID:", error);
+      return res
+        .status(500)
+        .json({ ok: false, mensaje: "Error interno del servidor." });
+    }
+  };
 
-            const newEvent = eventRepository.create({
-                nombre,
-                descripcion,
-                fecha: new Date(fecha), // Asegurarse de que sea un objeto Date
-                ubicacion,
-                puntosOtorgados,
-                latitud,
-                longitud
-            } as DeepPartial<EventoAmbiental>);
+  // ----------------------------------------------------
+  // CREAR NUEVO EVENTO (Solo Admin/Operador)
+  // ----------------------------------------------------
+  public createEvent = async (req: Request, res: Response) => {
+    try {
+      const {
+        nombre,
+        descripcion,
+        fecha,
+        ubicacion,
+        puntosOtorgados,
+        latitud,
+        longitud,
+      } = req.body;
 
-            await eventRepository.save(newEvent);
+      if (!nombre || !fecha || puntosOtorgados === undefined) {
+        // Revisar puntosOtorgados
+        return res.status(400).json({
+          ok: false,
+          mensaje:
+            "Faltan campos obligatorios: nombre, fecha y puntosOtorgados.",
+        });
+      }
 
-            return res.status(201).json({ 
-                ok: true, 
-                mensaje: 'Evento ambiental creado exitosamente.',
-                data: newEvent
-            });
-        } catch (error: any) {
-            console.error('Error al crear evento:', error);
-            return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor.' });
-        }
-    };
+      const newEvent = eventRepository.create({
+        nombre,
+        descripcion,
+        fecha: new Date(fecha), // Asegurarse de que sea un objeto Date
+        ubicacion,
+        puntosOtorgados,
+        latitud,
+        longitud,
+      } as DeepPartial<EventoAmbiental>);
 
-    // ----------------------------------------------------
-    // ACTUALIZAR EVENTO (Solo Admin/Operador)
-    // ----------------------------------------------------
-    public updateEvent = async (req: Request, res: Response) => {
-        try {
-            // ** CORRECCIÓN: Usar req.params.id as string **
-            const id = parseInt(req.params.id as string);
-            const updateData = req.body;
+      await eventRepository.save(newEvent);
 
-            if (isNaN(id)) {
-                return res.status(400).json({ ok: false, mensaje: 'ID de evento inválido.' });
-            }
+      return res.status(201).json({
+        ok: true,
+        mensaje: "Evento ambiental creado exitosamente.",
+        data: newEvent,
+      });
+    } catch (error: any) {
+      console.error("Error al crear evento:", error);
+      return res
+        .status(500)
+        .json({ ok: false, mensaje: "Error interno del servidor." });
+    }
+  };
 
-            let eventToUpdate = await eventRepository.findOneBy({ idEvento: id });
+  // ----------------------------------------------------
+  // ACTUALIZAR EVENTO (Solo Admin/Operador)
+  // ----------------------------------------------------
+  public updateEvent = async (req: Request, res: Response) => {
+    try {
+      // ** CORRECCIÓN: Usar req.params.id as string **
+      const id = parseInt(req.params.id as string);
+      const updateData = req.body;
 
-            if (!eventToUpdate) {
-                return res.status(404).json({ ok: false, mensaje: 'Evento no encontrado.' });
-            }
+      if (isNaN(id)) {
+        return res
+          .status(400)
+          .json({ ok: false, mensaje: "ID de evento inválido." });
+      }
 
-            // Aplicar las actualizaciones. TypeORM maneja la sobrescritura.
-            eventRepository.merge(eventToUpdate, updateData);
-            
-            // Asegurar que la fecha se convierta a Date si se proporciona
-            if (updateData.fecha) {
-                eventToUpdate.fecha = new Date(updateData.fecha);
-            }
+      let eventToUpdate = await eventRepository.findOneBy({ idEvento: id });
 
-            const updatedEvent = await eventRepository.save(eventToUpdate);
+      if (!eventToUpdate) {
+        return res
+          .status(404)
+          .json({ ok: false, mensaje: "Evento no encontrado." });
+      }
 
-            return res.json({ 
-                ok: true, 
-                mensaje: 'Evento ambiental actualizado exitosamente.',
-                data: updatedEvent
-            });
-        } catch (error: any) {
-            console.error('Error al actualizar evento:', error);
-            return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor.' });
-        }
-    };
+      // Aplicar las actualizaciones. TypeORM maneja la sobrescritura.
+      eventRepository.merge(eventToUpdate, updateData);
 
-    // ----------------------------------------------------
-    // ELIMINAR EVENTO (Solo Admin/Operador)
-    // ----------------------------------------------------
-    public deleteEvent = async (req: Request, res: Response) => {
-        try {
-            // ** CORRECCIÓN: Usar req.params.id as string **
-            const id = parseInt(req.params.id as string);
+      // Asegurar que la fecha se convierta a Date si se proporciona
+      if (updateData.fecha) {
+        eventToUpdate.fecha = new Date(updateData.fecha);
+      }
 
-            if (isNaN(id)) {
-                return res.status(400).json({ ok: false, mensaje: 'ID de evento inválido.' });
-            }
+      const updatedEvent = await eventRepository.save(eventToUpdate);
 
-            const result = await eventRepository.delete(id);
+      return res.json({
+        ok: true,
+        mensaje: "Evento ambiental actualizado exitosamente.",
+        data: updatedEvent,
+      });
+    } catch (error: any) {
+      console.error("Error al actualizar evento:", error);
+      return res
+        .status(500)
+        .json({ ok: false, mensaje: "Error interno del servidor." });
+    }
+  };
 
-            if (result.affected === 0) {
-                return res.status(404).json({ ok: false, mensaje: 'Evento no encontrado.' });
-            }
+  // ----------------------------------------------------
+  // ELIMINAR EVENTO (Solo Admin/Operador)
+  // ----------------------------------------------------
+  public deleteEvent = async (req: Request, res: Response) => {
+    try {
+      // ** CORRECCIÓN: Usar req.params.id as string **
+      const id = parseInt(req.params.id as string);
 
-            return res.status(200).json({ ok: true, mensaje: 'Evento ambiental eliminado exitosamente.' });
-        } catch (error: any) {
-            console.error('Error al eliminar evento:', error);
-            return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor.' });
-        }
-    };
+      if (isNaN(id)) {
+        return res
+          .status(400)
+          .json({ ok: false, mensaje: "ID de evento inválido." });
+      }
+
+      const result = await eventRepository.delete(id);
+
+      if (result.affected === 0) {
+        return res
+          .status(404)
+          .json({ ok: false, mensaje: "Evento no encontrado." });
+      }
+
+      return res.status(200).json({
+        ok: true,
+        mensaje: "Evento ambiental eliminado exitosamente.",
+      });
+    } catch (error: any) {
+      console.error("Error al eliminar evento:", error);
+      return res
+        .status(500)
+        .json({ ok: false, mensaje: "Error interno del servidor." });
+    }
+  };
+  public getEventsByUser = async (req: Request, res: Response) => {
+    try {
+      const idUsuario = parseInt(String(req.params.id));
+
+      if (isNaN(idUsuario)) {
+        return res.status(400).json({ ok: false, mensaje: "ID inválido" });
+      }
+
+      const eventos = await eventRepository.find({
+        where: {
+          usuarios: {
+            idUsuario: idUsuario, // Filtra por la propiedad ID dentro de la relación
+          },
+        },
+        order: { fecha: "DESC" },
+      });
+
+      return res.json({ ok: true, eventos });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ ok: false, mensaje: "Error de servidor" });
+    }
+  };
 }
