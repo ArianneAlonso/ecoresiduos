@@ -80,7 +80,13 @@ export class EntregaMaterial {
     name: "estado_puntos",
   })
   estadoPuntos!: EstadoPuntos;
-
+  @Column({
+    name: "motivo_rechazo",
+    type: "varchar",
+    length: 255,
+    nullable: true,
+  })
+  motivoRechazo?: string;
   @CreateDateColumn({ name: "fecha_solicitud" })
   fechaSolicitud!: Date;
 
