@@ -140,39 +140,33 @@ export class EntregasController {
     const { id } = req.params;
     const { pesoReal, puntosAOtorgar } = req.body;
 
-    // Validación de entrada rápida antes de abrir la conexión a la DB
-    if (!pesoReal || !puntosAOtorgar) {
-      res.status(400).json({ message: "Peso y puntos son requeridos." });
-      return;
-    }
-
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      // Usamos lock para evitar condiciones de carrera si dos admins intentan validar lo mismo
+      // 1. Buscar la entrega
       const entrega = await queryRunner.manager.findOne(EntregaMaterial, {
         where: { idEntrega: Number(id) },
-        lock: { mode: "pessimistic_write" },
       });
 
       if (!entrega || entrega.estadoPuntos !== EstadoPuntos.PENDIENTE) {
-        await queryRunner.rollbackTransaction();
         res
           .status(404)
-          .json({ message: "Solicitud no encontrada o ya procesada." });
+          .json({ message: "Solicitud no válida o ya procesada." });
+        await queryRunner.rollbackTransaction();
         return;
       }
 
-      // 1. Actualizamos la solicitud
+      // 2. Actualizar datos de la Entrega
       entrega.pesoKg = pesoReal;
       entrega.puntosGanados = puntosAOtorgar;
       entrega.estadoPuntos = EstadoPuntos.CONFIRMADO;
       entrega.fechaEntrega = new Date();
       await queryRunner.manager.save(entrega);
 
-      // 2. Acreditamos los puntos al usuario
+      // 3. IMPACTO EN USUARIO: Sumar puntos al perfil
+      // Usamos increment para evitar problemas de concurrencia
       await queryRunner.manager.increment(
         Usuario,
         { idUsuario: entrega.idUsuario },
@@ -180,75 +174,62 @@ export class EntregasController {
         puntosAOtorgar,
       );
 
+      // Si todo sale bien, confirmamos los cambios en la DB
       await queryRunner.commitTransaction();
 
       res.status(200).json({
         ok: true,
-        message: "Entrega confirmada y puntos acreditados.",
+        message: `¡Éxito! Se han acreditado ${puntosAOtorgar} puntos al usuario.`,
       });
     } catch (error) {
-      // Si algo falla, revertimos todos los cambios
-      if (queryRunner.isTransactionActive) {
-        await queryRunner.rollbackTransaction();
-      }
-      console.error("Error en confirmación:", error);
+      // Si hay error (ej: caída de red), no se guarda ni la entrega ni los puntos
+      await queryRunner.rollbackTransaction();
+      console.error("Error en la transacción de puntos:", error);
       res
         .status(500)
-        .json({ message: "Error interno al confirmar la entrega." });
+        .json({ message: "Error al procesar la acreditación de puntos." });
     } finally {
-      // Siempre liberamos el queryRunner para evitar agotar el pool de conexiones
       await queryRunner.release();
     }
   };
+
   /**
    * PATCH /entregas/:id/rechazar
-   * El recolector o admin rechaza la solicitud (ej: material no apto, domicilio inexistente)
    */
   public rechazarEntrega = async (
     req: AuthenticatedRequest,
     res: Response,
   ): Promise<void> => {
     const { id } = req.params;
-    const { motivo } = req.body; // Ej: "Material contaminado", "No se encontró a nadie"
+    const { motivo } = req.body;
 
     try {
       const entrega = await this.entregaRepository.findOne({
         where: { idEntrega: Number(id) },
       });
 
-      // 1. Validar existencia y estado actual
-      if (!entrega) {
-        res.status(404).json({ message: "Solicitud no encontrada." });
+      if (!entrega || entrega.estadoPuntos !== EstadoPuntos.PENDIENTE) {
+        res
+          .status(404)
+          .json({ message: "Solicitud no encontrada o ya procesada." });
         return;
       }
 
-      if (entrega.estadoPuntos !== EstadoPuntos.PENDIENTE) {
-        res.status(400).json({
-          message: `No se puede rechazar una entrega en estado: ${entrega.estadoPuntos}`,
-        });
-        return;
-      }
+      entrega.estadoPuntos = EstadoPuntos.RECHAZADO;
 
-      // 2. Actualizar estado a RECHAZADO
-      // Nota: Asegúrate de tener 'rechazado' en tu enum EstadoPuntos
-      entrega.estadoPuntos = "rechazado" as EstadoPuntos;
+      entrega.motivoRechazo = motivo || "No cumple requisitos";
       entrega.fechaEntrega = new Date();
-
-      // Opcional: Si tienes un campo de observaciones en tu entidad
-      // entrega.observaciones = motivo || "Sin motivo especificado";
 
       await this.entregaRepository.save(entrega);
 
-      res.status(200).json({
-        ok: true,
-        message: "La entrega ha sido rechazada correctamente.",
-        motivo: motivo || "No especificado",
-      });
-    } catch (error) {
-      console.error("Error al rechazar entrega:", error);
       res
-        .status(500)
-        .json({ message: "Error interno al procesar el rechazo." });
+        .status(200)
+        .json({
+          ok: true,
+          message: "Entrega rechazada. No se asignaron puntos.",
+        });
+    } catch (error) {
+      res.status(500).json({ message: "Error al rechazar la entrega." });
     }
   };
 }
