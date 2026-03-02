@@ -32,4 +32,11 @@ router.patch(
   entregasController.confirmarEntrega,
 );
 
+router.patch(
+  "/:id/rechazar",
+  SessionValidator.validateSession,
+  authorizeRole(["administrador"]),
+  entregasController.rechazarEntrega,
+);
+
 export default router;
