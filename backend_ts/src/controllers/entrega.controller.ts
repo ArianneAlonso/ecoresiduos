@@ -130,8 +130,8 @@ export class EntregasController {
   };
 
   /**
-   * PATCH /entregas/:id/validar (PARA EL ADMINISTRADOR)
-   * El recolector pesa la bolsa y asigna los puntos reales
+   * PATCH /entregas/:id/confirmar
+   * El recolector valida el peso y los puntos impactan en el perfil del usuario.
    */
   public confirmarEntrega = async (
     req: AuthenticatedRequest,
@@ -140,12 +140,13 @@ export class EntregasController {
     const { id } = req.params;
     const { pesoReal, puntosAOtorgar } = req.body;
 
+    // 1. Iniciamos una transacción con QueryRunner
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      // 1. Buscar la entrega
+      // 2. Buscamos la entrega (usando el ID de la ruta)
       const entrega = await queryRunner.manager.findOne(EntregaMaterial, {
         where: { idEntrega: Number(id) },
       });
@@ -158,41 +159,42 @@ export class EntregasController {
         return;
       }
 
-      // 2. Actualizar datos de la Entrega
+      // 3. ACTUALIZACIÓN EN TABLA 'entregas_materiales'
+      // Guardamos cuánto pesó y cuántos puntos ganó en esta entrega específica
       entrega.pesoKg = pesoReal;
       entrega.puntosGanados = puntosAOtorgar;
       entrega.estadoPuntos = EstadoPuntos.CONFIRMADO;
       entrega.fechaEntrega = new Date();
       await queryRunner.manager.save(entrega);
 
-      // 3. IMPACTO EN USUARIO: Sumar puntos al perfil
-      // Usamos increment para evitar problemas de concurrencia
+      // 4. ACTUALIZACIÓN EN TABLA 'usuarios' (La parte que pediste)
+      // Sumamos los puntos actuales + los nuevos puntos ganados
       await queryRunner.manager.increment(
         Usuario,
-        { idUsuario: entrega.idUsuario },
-        "puntosAcumulados",
-        puntosAOtorgar,
+        { idUsuario: entrega.idUsuario }, // Buscamos al dueño de la entrega
+        "puntosAcumulados", // Columna de la tabla usuarios
+        puntosAOtorgar, // Valor a sumar
       );
 
-      // Si todo sale bien, confirmamos los cambios en la DB
+      // 5. Confirmamos todos los cambios
       await queryRunner.commitTransaction();
 
       res.status(200).json({
         ok: true,
-        message: `¡Éxito! Se han acreditado ${puntosAOtorgar} puntos al usuario.`,
+        message: `Entrega confirmada. Se sumaron ${puntosAOtorgar} puntos al usuario.`,
       });
     } catch (error) {
-      // Si hay error (ej: caída de red), no se guarda ni la entrega ni los puntos
+      // Si algo falla, deshacemos todo (Rollback)
       await queryRunner.rollbackTransaction();
-      console.error("Error en la transacción de puntos:", error);
+      console.error("Error al acreditar puntos:", error);
       res
         .status(500)
         .json({ message: "Error al procesar la acreditación de puntos." });
     } finally {
+      // Liberamos la conexión
       await queryRunner.release();
     }
   };
-
   /**
    * PATCH /entregas/:id/rechazar
    */
@@ -222,12 +224,10 @@ export class EntregasController {
 
       await this.entregaRepository.save(entrega);
 
-      res
-        .status(200)
-        .json({
-          ok: true,
-          message: "Entrega rechazada. No se asignaron puntos.",
-        });
+      res.status(200).json({
+        ok: true,
+        message: "Entrega rechazada. No se asignaron puntos.",
+      });
     } catch (error) {
       res.status(500).json({ message: "Error al rechazar la entrega." });
     }
