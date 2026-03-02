@@ -144,6 +144,7 @@ CREATE TABLE public.entregas_materiales (
     puntos_ganados integer NOT NULL,
     estado_puntos public.estado_puntos_enum DEFAULT 'pendiente' NOT NULL, 
     fecha_entrega timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    motivo_rechazo text,
     latitud NUMERIC(9,6) NULL, 
     longitud NUMERIC(9,6) NULL 
 );

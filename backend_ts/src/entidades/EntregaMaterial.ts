@@ -82,8 +82,7 @@ export class EntregaMaterial {
   estadoPuntos!: EstadoPuntos;
   @Column({
     name: "motivo_rechazo",
-    type: "varchar",
-    length: 255,
+    type: "text",
     nullable: true,
   })
   motivoRechazo?: string;
