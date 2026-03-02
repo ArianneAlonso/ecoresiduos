@@ -10,6 +10,7 @@ export default {
     "./register.html",
     "./estadistica.html",
     "./admin-events.html",
+    "./entregas_usuarios.html",
     "./rutas.html",
     "./*.html",                    // todos los HTML en la raíz
     "./src/**/*.{js,ts,jsx,tsx}"   // todos los JS dentro de src
