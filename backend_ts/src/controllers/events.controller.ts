@@ -3,35 +3,132 @@ import { AppDataSource } from "../data-source";
 import { EventoAmbiental } from "../entidades/EventoAmbiental";
 import { MoreThanOrEqual } from "typeorm";
 import type { DeepPartial } from "typeorm";
-import type { AuthenticatedRequest } from "../interfaces/AutenticatedRequest";
 
 const eventRepository = AppDataSource.getRepository(EventoAmbiental);
 
 export class EventosController {
   // ----------------------------------------------------
-  // OBTENER TODOS LOS EVENTOS (Público)
+  // OBTENER TODOS LOS EVENTOS
   // ----------------------------------------------------
   public getEvents = async (req: Request, res: Response) => {
     try {
-      // upcoming es de tipo string | string[] | undefined.
       const { upcoming } = req.query;
       let where: any = {};
 
-      // Filtro para próximos eventos (upcoming=true)
       if (upcoming === "true") {
         where.fecha = MoreThanOrEqual(new Date());
       }
 
       const events = await eventRepository.find({
         where: where,
-        order: {
-          fecha: "ASC", // Ordenar por fecha, los más próximos primero
-        },
+        order: { fecha: "ASC" },
       });
 
       return res.json({ ok: true, data: events });
     } catch (error: any) {
       console.error("Error al obtener eventos:", error);
+      return res
+        .status(500)
+        .json({ ok: false, mensaje: "Error interno del servidor." });
+    }
+  };
+
+  // ----------------------------------------------------
+  // CREAR NUEVO EVENTO (Con Coordenadas)
+  // ----------------------------------------------------
+  public createEvent = async (req: Request, res: Response) => {
+    try {
+      const {
+        nombre,
+        descripcion,
+        fecha,
+        ubicacion,
+        puntosOtorgados,
+        latitud,
+        longitud,
+      } = req.body;
+
+      // Validación extendida para incluir coordenadas si son obligatorias en tu lógica
+      if (
+        !nombre ||
+        !fecha ||
+        puntosOtorgados === undefined ||
+        latitud === undefined ||
+        longitud === undefined
+      ) {
+        return res.status(400).json({
+          ok: false,
+          mensaje:
+            "Faltan campos obligatorios: nombre, fecha, puntosOtorgados, latitud y longitud.",
+        });
+      }
+
+      const newEvent = eventRepository.create({
+        nombre,
+        descripcion,
+        fecha: new Date(fecha),
+        ubicacion,
+        puntosOtorgados: Number(puntosOtorgados),
+        latitud: parseFloat(latitud),
+        longitud: parseFloat(longitud),
+      } as DeepPartial<EventoAmbiental>);
+
+      await eventRepository.save(newEvent);
+
+      return res.status(201).json({
+        ok: true,
+        mensaje: "Evento creado exitosamente con coordenadas.",
+        data: newEvent,
+      });
+    } catch (error: any) {
+      console.error("Error al crear evento:", error);
+      return res
+        .status(500)
+        .json({ ok: false, mensaje: "Error interno del servidor." });
+    }
+  };
+
+  // ----------------------------------------------------
+  // ACTUALIZAR EVENTO (Incluyendo Coordenadas)
+  // ----------------------------------------------------
+  public updateEvent = async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id as string);
+      const updateData = req.body;
+
+      if (isNaN(id)) {
+        return res
+          .status(400)
+          .json({ ok: false, mensaje: "ID de evento inválido." });
+      }
+
+      let eventToUpdate = await eventRepository.findOneBy({ idEvento: id });
+
+      if (!eventToUpdate) {
+        return res
+          .status(404)
+          .json({ ok: false, mensaje: "Evento no encontrado." });
+      }
+
+      // Fusionar datos (esto cubrirá latitud y longitud si vienen en el body)
+      eventRepository.merge(eventToUpdate, updateData);
+
+      // Limpieza y formateo de datos específicos
+      if (updateData.fecha) eventToUpdate.fecha = new Date(updateData.fecha);
+      if (updateData.latitud)
+        eventToUpdate.latitud = parseFloat(updateData.latitud);
+      if (updateData.longitud)
+        eventToUpdate.longitud = parseFloat(updateData.longitud);
+
+      const updatedEvent = await eventRepository.save(eventToUpdate);
+
+      return res.json({
+        ok: true,
+        mensaje: "Evento actualizado exitosamente.",
+        data: updatedEvent,
+      });
+    } catch (error: any) {
+      console.error("Error al actualizar evento:", error);
       return res
         .status(500)
         .json({ ok: false, mensaje: "Error interno del servidor." });
@@ -70,102 +167,6 @@ export class EventosController {
     }
   };
 
-  // ----------------------------------------------------
-  // CREAR NUEVO EVENTO (Solo Admin/Operador)
-  // ----------------------------------------------------
-  public createEvent = async (req: Request, res: Response) => {
-    try {
-      const {
-        nombre,
-        descripcion,
-        fecha,
-        ubicacion,
-        puntosOtorgados,
-        latitud,
-        longitud,
-      } = req.body;
-
-      if (!nombre || !fecha || puntosOtorgados === undefined) {
-        // Revisar puntosOtorgados
-        return res.status(400).json({
-          ok: false,
-          mensaje:
-            "Faltan campos obligatorios: nombre, fecha y puntosOtorgados.",
-        });
-      }
-
-      const newEvent = eventRepository.create({
-        nombre,
-        descripcion,
-        fecha: new Date(fecha), // Asegurarse de que sea un objeto Date
-        ubicacion,
-        puntosOtorgados,
-        latitud,
-        longitud,
-      } as DeepPartial<EventoAmbiental>);
-
-      await eventRepository.save(newEvent);
-
-      return res.status(201).json({
-        ok: true,
-        mensaje: "Evento ambiental creado exitosamente.",
-        data: newEvent,
-      });
-    } catch (error: any) {
-      console.error("Error al crear evento:", error);
-      return res
-        .status(500)
-        .json({ ok: false, mensaje: "Error interno del servidor." });
-    }
-  };
-
-  // ----------------------------------------------------
-  // ACTUALIZAR EVENTO (Solo Admin/Operador)
-  // ----------------------------------------------------
-  public updateEvent = async (req: Request, res: Response) => {
-    try {
-      // ** CORRECCIÓN: Usar req.params.id as string **
-      const id = parseInt(req.params.id as string);
-      const updateData = req.body;
-
-      if (isNaN(id)) {
-        return res
-          .status(400)
-          .json({ ok: false, mensaje: "ID de evento inválido." });
-      }
-
-      let eventToUpdate = await eventRepository.findOneBy({ idEvento: id });
-
-      if (!eventToUpdate) {
-        return res
-          .status(404)
-          .json({ ok: false, mensaje: "Evento no encontrado." });
-      }
-
-      // Aplicar las actualizaciones. TypeORM maneja la sobrescritura.
-      eventRepository.merge(eventToUpdate, updateData);
-
-      // Asegurar que la fecha se convierta a Date si se proporciona
-      if (updateData.fecha) {
-        eventToUpdate.fecha = new Date(updateData.fecha);
-      }
-
-      const updatedEvent = await eventRepository.save(eventToUpdate);
-
-      return res.json({
-        ok: true,
-        mensaje: "Evento ambiental actualizado exitosamente.",
-        data: updatedEvent,
-      });
-    } catch (error: any) {
-      console.error("Error al actualizar evento:", error);
-      return res
-        .status(500)
-        .json({ ok: false, mensaje: "Error interno del servidor." });
-    }
-  };
-
-  // ----------------------------------------------------
   // ELIMINAR EVENTO (Solo Admin/Operador)
   // ----------------------------------------------------
   public deleteEvent = async (req: Request, res: Response) => {
