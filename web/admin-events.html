@@ -11,17 +11,6 @@
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <style>
-    /* Ajustes para modo oscuro */
-    .dark .leaflet-control {
-      background: #1f2937 !important;
-      color: white !important;
-    }
-    .leaflet-popup-content-wrapper {
-      font-size: 14px;
-    }
-  </style>
 </head>
 
 <body class="bg-gray-100 dark:bg-gray-900 dark:text-gray-200">
@@ -31,30 +20,26 @@
     <h1 class="text-xl font-bold">Panel de Eventos</h1>
 
     <div class="flex items-center gap-4">
-      <!-- Botón modo oscuro -->
-      <button id="toggleDark" class="py-1 px-3 bg-white text-gray-900 dark:bg-gray-700 dark:text-white rounded shadow">
+      <button id="toggleDark"
+        class="py-1 px-3 bg-white text-gray-900 dark:bg-gray-700 dark:text-white rounded shadow">
         🌓 Modo
       </button>
 
-      <!-- Logout -->
-      <button
-        onclick="logout()"
-        class="py-1 px-3 bg-red-600 hover:bg-red-700 rounded text-white"
-      >
+      <button onclick="logout()"
+        class="py-1 px-3 bg-red-600 hover:bg-red-700 rounded text-white">
         Cerrar sesión
       </button>
     </div>
   </nav>
 
-  <!-- CONTENEDOR PRINCIPAL -->
+  <!-- CONTENEDOR -->
   <div class="max-w-6xl mx-auto mt-6 p-4">
 
-    <!-- FORMULARIO -->
+    <!-- FORM -->
     <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
       <h2 class="text-xl font-bold mb-4">Crear / Editar Evento</h2>
 
       <form id="eventoForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        
         <input type="hidden" id="idEvento" />
 
         <div>
@@ -79,26 +64,22 @@
 
         <div>
           <label class="font-semibold">Latitud</label>
-          <input id="latitud" step="0.000001" class="input" readonly />
+          <input id="latitud" class="input" readonly />
         </div>
 
         <div>
           <label class="font-semibold">Longitud</label>
-          <input id="longitud" step="0.000001" class="input" readonly />
+          <input id="longitud" class="input" readonly />
         </div>
       </form>
 
-      <!-- MAPA -->
       <div class="mt-4">
         <h3 class="text-lg font-semibold mb-1">Seleccionar ubicación</h3>
-        <p class="text-sm mb-2 text-gray-600 dark:text-gray-300">Haz clic en el mapa para obtener latitud y longitud.</p>
         <div id="map" class="w-full h-72 rounded-lg shadow"></div>
       </div>
 
-      <button
-        onclick="guardarEvento()"
-        class="mt-4 w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded"
-      >
+      <button onclick="guardarEvento()"
+        class="mt-4 w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded">
         Guardar Evento
       </button>
     </div>
@@ -107,7 +88,7 @@
     <div class="mt-8 bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
       <h2 class="text-xl font-bold mb-4">Eventos Registrados</h2>
 
-      <table class="w-full text-left border-collapse" id="tablaEventos">
+      <table class="w-full text-left border-collapse">
         <thead>
           <tr class="bg-gray-200 dark:bg-gray-700">
             <th class="p-2">ID</th>
@@ -123,10 +104,36 @@
     </div>
   </div>
 
+  <!-- 🔥 MODAL PROFESIONAL CON BLUR -->
+  <div id="modalEliminar"
+    class="fixed inset-0 backdrop-blur-sm hidden items-center justify-center z-[9999]">
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-96 p-6 border border-gray-200 dark:border-gray-700">
+
+      <h2 class="text-lg font-bold mb-2">Confirmar eliminación</h2>
+
+      <p class="text-sm text-gray-600 dark:text-gray-300 mb-5">
+        ¿Estás segura de que deseas eliminar este evento?
+        Esta acción no se puede deshacer.
+      </p>
+
+      <div class="flex justify-end gap-3">
+        <button id="cancelarEliminar"
+          class="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded-lg hover:bg-gray-400 transition">
+          Cancelar
+        </button>
+
+        <button id="confirmarEliminar"
+          class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="./src/admin-events.js"></script>
 
   <script>
-    // Botón modo oscuro
     document.getElementById("toggleDark").addEventListener("click", () => {
       document.documentElement.classList.toggle("dark");
     });
