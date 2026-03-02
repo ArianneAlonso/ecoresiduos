@@ -6,7 +6,7 @@ import {
   ManyToMany,
   JoinTable,
 } from "typeorm";
-import { Usuario } from "./Usuarios"; // <--- Verifica que esta ruta sea correcta
+import { Usuario } from "./Usuarios";
 
 @Entity("eventos_ambientales")
 export class EventoAmbiental extends BaseEntity {
@@ -22,7 +22,11 @@ export class EventoAmbiental extends BaseEntity {
   @Column({ type: "timestamp without time zone" })
   fecha!: Date;
 
-  // ... (tus otras columnas)
+  @Column({ type: "numeric", precision: 9, scale: 6, name: "latitud" })
+  latitud!: number;
+
+  @Column({ type: "numeric", precision: 9, scale: 6, name: "longitud" })
+  longitud!: number;
 
   @ManyToMany(() => Usuario, (usuario) => usuario.eventos)
   @JoinTable({
@@ -33,5 +37,5 @@ export class EventoAmbiental extends BaseEntity {
       referencedColumnName: "idUsuario",
     },
   })
-  usuarios!: Usuario[]; // Agregué el '!' para evitar errores de inicialización
+  usuarios!: Usuario[];
 }

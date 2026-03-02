@@ -23,7 +23,7 @@ export class Contenedor extends BaseEntity {
   latitud!: number;
 
   @Column({ type: "numeric", precision: 9, scale: 6, name: "longitud" })
-  longitud!: number; // --- COLUMNAS ACTUALIZADAS PARA COINCIDIR CON EL ESQUEMA SQL ---
+  longitud!: number;
 
   @Column({
     type: "varchar",
