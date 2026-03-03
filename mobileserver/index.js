@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const imagesRouter = require('./images/controllers');
+const imagesRouter = require('./gemini/controllers');
 
 const app = express();
 

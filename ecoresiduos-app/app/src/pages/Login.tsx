@@ -12,6 +12,7 @@ import {
   Platform,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
@@ -21,9 +22,45 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  const usuarios = [
+    {
+      email: 'conductor@gmail.com',
+      password: 'conductor1212',
+      rol: 'conductor',
+    },
+    {
+      email: 'usuario@gmail.com',
+      password: '1234',
+      rol: 'usuario',
+    },
+  ];
+
   const handleLogin = () => {
-    console.log('Login:', { email, password });
-    navigation.replace('MainTabs');
+    if (!email || !password) {
+      Alert.alert('Error', 'Completa todos los campos');
+      return;
+    }
+
+    const usuarioEncontrado = usuarios.find(
+      (u) => u.email === email && u.password === password
+    );
+
+    if (!usuarioEncontrado) {
+      Alert.alert('Error', 'Credenciales incorrectas');
+      return;
+    }
+
+    if (usuarioEncontrado.rol === 'conductor') {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'ConductorTabs' }],
+      });
+    } else {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'MainTabs' }],
+      });
+    }
   };
 
   return (
@@ -70,10 +107,7 @@ export default function Login() {
               </View>
             </View>
 
-            <Button
-              onPress={handleLogin}
-              style={styles.button}
-            >
+            <Button onPress={handleLogin} style={styles.button}>
               Iniciar Sesión
             </Button>
           </View>

@@ -1,10 +1,14 @@
+import React from 'react';
 import { User, MapPin, Bell, HelpCircle, LogOut, ChevronRight, Award, Leaf } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+
 import AppHeader from '../../src/components/AppHeader';
 import PointsCard from '../../src/components/PointsCard';
 import { Card } from '../../src/components/ui/card';
-import { Avatar, AvatarFallback } from '../../src/components/ui/avatar';
+import { AvatarFallback } from '../../src/components/ui/avatar';
 import { Button } from '../../src/components/ui/button';
 import { Badge } from '../../src/components/ui/badge';
+
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 
 const menuItems = [
@@ -20,13 +24,22 @@ const stats = [
 ];
 
 export default function Profile() {
+  const navigation = useNavigation<any>();
+
+  const handleLogout = () => {
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
+  };
+
   return (
     <View style={styles.container}>
       <AppHeader title="Mi Perfil" />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <PointsCard points={1250} change={85} />
-        
+
         <Card style={styles.profileCard}>
           <View style={styles.profileHeader}>
             <View style={styles.customAvatar}>
@@ -34,9 +47,11 @@ export default function Profile() {
                 U
               </AvatarFallback>
             </View>
+
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>Usuario EcoResiduos</Text>
               <Text style={styles.profileEmail}>usuario@email.com</Text>
+
               <Badge variant="secondary" style={styles.levelBadge}>
                 <Award size={12} color="#6b7280" style={styles.badgeIcon} />
                 Eco Warrior
@@ -45,7 +60,7 @@ export default function Profile() {
           </View>
 
           <View style={styles.statsGrid}>
-            {stats.map((stat, index) => {
+            {stats.map((stat) => {
               const Icon = stat.icon;
               return (
                 <View key={stat.label} style={styles.statItem}>
@@ -62,6 +77,7 @@ export default function Profile() {
 
         <View style={styles.settingsSection}>
           <Text style={styles.sectionTitle}>Configuración</Text>
+
           <Card style={styles.menuCard}>
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -75,10 +91,12 @@ export default function Profile() {
                   <View style={styles.menuIcon}>
                     <Icon size={20} color="#374151" />
                   </View>
+
                   <View style={styles.menuContent}>
                     <Text style={styles.menuTitle}>{item.label}</Text>
                     <Text style={styles.menuDescription}>{item.description}</Text>
                   </View>
+
                   <ChevronRight size={20} color="#6b7280" />
                 </TouchableOpacity>
               );
@@ -89,10 +107,13 @@ export default function Profile() {
         <Button
           variant="outline"
           style={styles.logoutButton}
+          onPress={handleLogout}
           testID="button-logout"
         >
           <LogOut size={16} color="#ef4444" style={styles.logoutIcon} />
-          <Text>Cerrar Sesión</Text>
+          <Text style={{ color: '#ef4444', fontWeight: '600' }}>
+            Cerrar Sesión
+          </Text>
         </Button>
       </ScrollView>
     </View>

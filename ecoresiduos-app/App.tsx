@@ -18,6 +18,10 @@ import Profile from './app/src/pages/Profile';
 import Tips from './app/src/pages/Tips';
 import NotFound from './app/src/pages/not-found';
 
+import HomeConductor from './app/src/conductor/homeconductor';
+import MapaRecorrido from './app/src/conductor/maparecorrido';
+import QR from './app/src/conductor/qr';
+
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -26,6 +30,7 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   MainTabs: undefined;
+  ConductorTabs: undefined;
   Events: undefined;
   Tips: undefined;
   NotFound: undefined;
@@ -48,6 +53,16 @@ function MainTabs() {
   );
 }
 
+function ConductorTabs() {
+  return (
+    <Tab.Navigator screenOptions={{ headerShown: false }}>
+      <Tab.Screen name="Inicio" component={HomeConductor} />
+      <Tab.Screen name="Mapa" component={MapaRecorrido} />
+      <Tab.Screen name="QR" component={QR} />
+    </Tab.Navigator>
+  );
+}
+
 function AppRouter() {
   return (
     <Stack.Navigator
@@ -58,6 +73,7 @@ function AppRouter() {
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Register" component={Register} />
       <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen name="ConductorTabs" component={ConductorTabs} />
       <Stack.Screen name="Events" component={Events} />
       <Stack.Screen name="Tips" component={Tips} />
       <Stack.Screen name="NotFound" component={NotFound} />
