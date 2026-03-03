@@ -6,7 +6,6 @@
   <title>Consejos Ecológicos - EcoResiduos</title>
   <link rel="icon" type="image/png" href="/public/assets/favicon.png" />
   <link rel="stylesheet" href="src/style.css">
- 
 </head>
 
 <body class="flex flex-col min-h-screen bg-green-50 text-gray-800">
@@ -19,18 +18,23 @@
     </div>
 
     <ul class="hidden md:flex space-x-6 font-semibold items-center">
-      <li><a href="../index.html" class="hover:text-green-900">Inicio</a></li>
+      <li><a href="main.html" class="hover:text-green-900">Inicio</a></li>
       <li><a href="mapa.html" class="hover:text-green-900">Mapa</a></li>
       <li><a href="estadistica.html" class="hover:text-green-900">Estadísticas</a></li>
       <li><a href="consejos.html" class="hover:text-green-900">Consejos</a></li>
+      <li><a href="entregas_usuarios.html" class="hover:text-green-900">Entregas</a></li>
       <li><a href="perfil.html" class="hover:text-green-900">Perfil</a></li>
     </ul>
 
     <div class="flex items-center space-x-3">
-      <button id="notifyPermBtn" class="text-sm px-3 py-1 rounded-md bg-yellow-100 text-yellow-800 hidden">
+      <button id="notifyPermBtn"
+        class="text-sm px-3 py-1 rounded-md bg-yellow-100 text-yellow-800 hidden">
         Activar notific.
       </button>
-      <button id="logoutBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+
+      <!-- 🔴 BOTÓN CERRAR SESIÓN EN ROJO -->
+      <button id="logoutBtn"
+        class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition font-semibold shadow-md">
         Cerrar sesión
       </button>
     </div>
@@ -49,8 +53,11 @@
     <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-6">
       <div>
         <h3 class="font-bold text-lg">EcoResiduos</h3>
-        <p class="text-sm text-green-100 mt-2">Plataforma dedicada a fomentar el reciclaje y la economía circular en tu comunidad.</p>
+        <p class="text-sm text-green-100 mt-2">
+          Plataforma dedicada a fomentar el reciclaje y la economía circular en tu comunidad.
+        </p>
       </div>
+
       <div>
         <h4 class="font-semibold">Enlaces</h4>
         <ul class="text-sm mt-2 space-y-1">
@@ -58,18 +65,21 @@
           <li><a href="../index.html" class="hover:underline">Inicio</a></li>
         </ul>
       </div>
+
       <div>
         <h4 class="font-semibold">Contacto</h4>
         <p class="text-sm mt-2">contacto@ecoresiduos.dev</p>
       </div>
     </div>
+
     <div class="mt-6 text-center text-green-200 text-sm">
       © 2025 EcoResiduos. Todos los derechos reservados.
     </div>
   </footer>
 
   <!-- JS -->
-  <script type="module" src="\src\consejos.js"></script>
+  <script type="module" src="/src/consejos.js"></script>
   <script type="module" src="/src/logout.js"></script>
+
 </body>
 </html>

@@ -3,11 +3,48 @@
 <head>
   <meta charset="UTF-8" />
   <title>Mis Entregas</title>
- 
-</head>
-<body class="bg-gray-100 p-6">
 
-  <div class="max-w-5xl mx-auto bg-white shadow-lg rounded-lg p-6">
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+</head>
+
+<body class="flex flex-col min-h-screen bg-green-50 text-gray-800">
+
+  <!-- NAVBAR -->
+  <nav class="bg-white shadow-md px-6 py-4 flex justify-between items-center sticky top-0 z-20">
+    <div class="flex items-center space-x-3">
+      <img src="../assets/logo.png" alt="logo" class="w-8 h-8">
+      <span class="text-2xl font-bold text-green-600">EcoResiduos</span>
+    </div>
+
+    <ul class="hidden md:flex space-x-6 font-semibold items-center">
+      <li><a href="main.html" class="hover:text-green-900">Inicio</a></li>
+      <li><a href="mapa.html" class="hover:text-green-900">Mapa</a></li>
+      <li><a href="estadistica.html" class="hover:text-green-900">Estadísticas</a></li>
+      <li><a href="consejos.html" class="hover:text-green-900">Consejos</a></li>
+      <li><a href="entregas_usuarios.html" class="hover:text-green-900">Entregas</a></li>
+      <li><a href="perfil.html" class="text-green-900 font-bold border-b-2 border-green-700">Perfil</a></li>
+    </ul>
+
+    <div class="flex items-center space-x-3">
+
+      <!-- 🔴 BOTÓN CERRAR SESIÓN EN ROJO -->
+      <button id="logoutBtn"
+        class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition font-semibold shadow-md">
+        Cerrar sesión
+      </button>
+
+    </div>
+  </nav>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <div class="flex-1 max-w-6xl mx-auto bg-white shadow-lg rounded-lg p-6 mt-8">
 
     <h1 class="text-2xl font-bold mb-4">📦 Mis Entregas</h1>
 
@@ -75,21 +112,30 @@
     </div>
 
     <!-- TABLA -->
-    <table class="w-full border-collapse">
+    <table class="w-full border-collapse mb-8">
       <thead>
         <tr class="bg-gray-200">
           <th class="p-2 text-left">Fecha</th>
           <th class="p-2 text-left">Materiales</th>
           <th class="p-2 text-left">Dirección</th>
+          <th class="p-2 text-left">Latitud</th>
+          <th class="p-2 text-left">Longitud</th>
           <th class="p-2 text-left">Estado</th>
         </tr>
       </thead>
       <tbody id="tablaEntregas"></tbody>
     </table>
 
+    <!-- MAPA -->
+    <h2 class="text-xl font-semibold mb-3">🗺 Ubicación de mis entregas</h2>
+    <div id="map" class="w-full h-96 rounded border"></div>
+
   </div>
 
-  <!-- JS SEPARADO -->
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- TU JS -->
   <script type="module" src="src/entregas_usuario.js"></script>
 
 </body>

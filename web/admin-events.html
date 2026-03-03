@@ -15,10 +15,42 @@
 
 <body class="bg-gray-100 dark:bg-gray-900 dark:text-gray-200">
 
-  <!-- NAVBAR -->
+  <!-- ================= NAVBAR ================= -->
   <nav class="w-full bg-green-700 dark:bg-green-900 text-white px-6 py-4 flex justify-between items-center shadow-md">
-    <h1 class="text-xl font-bold">Panel de Eventos</h1>
 
+    <!-- Logo -->
+    <h1 class="text-xl font-bold">Sistema de Reciclaje</h1>
+
+    <!-- Enlaces -->
+    <div class="hidden md:flex items-center gap-6 font-medium">
+      <a href="/dashboard.html" class="hover:text-green-200 transition">
+        Dashboard
+      </a>
+
+      <!-- Activo -->
+      <a href="/admin-events.html"
+         class="text-yellow-300 font-bold border-b-2 border-yellow-300 pb-1">
+        Eventos
+      </a>
+
+      <a href="/profile.html" class="hover:text-green-200 transition">
+        Ecopuntos
+      </a>
+
+      <a href="/rutas.html" class="hover:text-green-200 transition">
+        Rutas
+      </a>
+
+      <a href="/contenedores.html" class="hover:text-green-200 transition">
+        Contenedores
+      </a>
+
+      <a href="/usuarios.html" class="hover:text-green-200 transition">
+        Usuarios
+      </a>
+    </div>
+
+    <!-- Acciones -->
     <div class="flex items-center gap-4">
       <button id="toggleDark"
         class="py-1 px-3 bg-white text-gray-900 dark:bg-gray-700 dark:text-white rounded shadow">
@@ -32,7 +64,7 @@
     </div>
   </nav>
 
-  <!-- CONTENEDOR -->
+  <!-- ================= CONTENIDO ================= -->
   <div class="max-w-6xl mx-auto mt-6 p-4">
 
     <!-- FORM -->
@@ -104,7 +136,7 @@
     </div>
   </div>
 
-  <!-- 🔥 MODAL PROFESIONAL CON BLUR -->
+  <!-- ================= MODAL ================= -->
   <div id="modalEliminar"
     class="fixed inset-0 backdrop-blur-sm hidden items-center justify-center z-[9999]">
 

@@ -1,4 +1,4 @@
-import './style.css';
+import './style.css'
 
 /* =========================================
    CONFIG
@@ -13,6 +13,23 @@ const btnCancelar = document.getElementById("btnCancelar");
 const formEntrega = document.getElementById("formEntrega");
 
 /* =========================================
+   MAPA
+========================================= */
+
+let map;
+let markersLayer;
+
+function inicializarMapa() {
+  map = L.map("map").setView([-34.6037, -58.3816], 12); // Buenos Aires default
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(map);
+
+  markersLayer = L.layerGroup().addTo(map);
+}
+
+/* =========================================
    CARGAR MIS ENTREGAS
 ========================================= */
 
@@ -23,7 +40,6 @@ async function cargarEntregas() {
       credentials: "include"
     });
 
-    // 🔐 Si no está autenticada
     if (res.status === 401) {
       alert("Debes iniciar sesión.");
       window.location.href = "/login.html";
@@ -31,12 +47,14 @@ async function cargarEntregas() {
     }
 
     const data = await res.json();
+
     tbody.innerHTML = "";
+    markersLayer.clearLayers();
 
     if (!data.entregas || data.entregas.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="4" class="text-center p-4 text-gray-500">
+          <td colspan="6" class="text-center p-4 text-gray-500">
             No tienes entregas aún.
           </td>
         </tr>
@@ -44,7 +62,21 @@ async function cargarEntregas() {
       return;
     }
 
-    data.entregas.forEach(e => agregarFila(e));
+    const coordenadas = [];
+
+    data.entregas.forEach(e => {
+      agregarFila(e);
+      agregarMarcador(e);
+
+      if (e.latitud && e.longitud) {
+        coordenadas.push([e.latitud, e.longitud]);
+      }
+    });
+
+    // Centrar mapa automáticamente
+    if (coordenadas.length > 0) {
+      map.fitBounds(coordenadas);
+    }
 
   } catch (error) {
     console.error("Error cargando entregas:", error);
@@ -78,6 +110,10 @@ function badgeEstado(estado) {
   }
 }
 
+/* =========================================
+   AGREGAR FILA A TABLA
+========================================= */
+
 function agregarFila(e) {
   const tr = document.createElement("tr");
 
@@ -87,10 +123,29 @@ function agregarFila(e) {
     </td>
     <td class="p-2 border-b">${e.detalleMateriales}</td>
     <td class="p-2 border-b">${e.direccion}</td>
+    <td class="p-2 border-b">${e.latitud ?? "-"}</td>
+    <td class="p-2 border-b">${e.longitud ?? "-"}</td>
     <td class="p-2 border-b">${badgeEstado(e.estadoPuntos)}</td>
   `;
 
   tbody.appendChild(tr);
+}
+
+/* =========================================
+   AGREGAR MARCADOR AL MAPA
+========================================= */
+
+function agregarMarcador(e) {
+
+  if (!e.latitud || !e.longitud) return;
+
+  const marker = L.marker([e.latitud, e.longitud]).addTo(markersLayer);
+
+  marker.bindPopup(`
+    <strong>Materiales:</strong> ${e.detalleMateriales}<br>
+    <strong>Dirección:</strong> ${e.direccion}<br>
+    <strong>Estado:</strong> ${e.estadoPuntos}
+  `);
 }
 
 /* =========================================
@@ -150,7 +205,7 @@ formEntrega.addEventListener("submit", async function (e) {
       alert("Solicitud creada correctamente 🎉");
       formEntrega.reset();
       formularioContainer.classList.add("hidden");
-      cargarEntregas(); // 🔄 Recargar tabla
+      cargarEntregas(); // 🔄 Recargar tabla y mapa
     } else {
       alert(data.message || "Error al crear la solicitud.");
     }
@@ -165,4 +220,7 @@ formEntrega.addEventListener("submit", async function (e) {
    INICIAR
 ========================================= */
 
-cargarEntregas();
+document.addEventListener("DOMContentLoaded", () => {
+  inicializarMapa();
+  cargarEntregas();
+});

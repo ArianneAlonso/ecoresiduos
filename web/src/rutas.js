@@ -1,21 +1,72 @@
+import "./style.css";
+
 // ================================
 // ELEMENTOS
 // ================================
 const tbody = document.getElementById("tbodyEntregas");
 const logoutBtn = document.getElementById("logoutBtn");
 
+let map;
+let markersLayer;
+
 // ================================
 // INICIO
 // ================================
-document.addEventListener("DOMContentLoaded", cargarEntregas);
+document.addEventListener("DOMContentLoaded", () => {
+  inicializarModoOscuro(); // 🌙 Dark mode
+  inicializarMapa();
+  cargarEntregas();
+});
+
+// ================================
+// MODO OSCURO
+// ================================
+function inicializarModoOscuro() {
+
+  const toggleBtn = document.getElementById("toggleDark");
+  if (!toggleBtn) return;
+
+  // Cargar preferencia guardada
+  const modoGuardado = localStorage.getItem("modoOscuro");
+
+  if (modoGuardado === "true") {
+    document.documentElement.classList.add("dark");
+  }
+
+  toggleBtn.addEventListener("click", () => {
+
+    document.documentElement.classList.toggle("dark");
+
+    const esOscuro = document.documentElement.classList.contains("dark");
+
+    localStorage.setItem("modoOscuro", esOscuro);
+  });
+}
+
+// ================================
+// INICIALIZAR MAPA
+// ================================
+function inicializarMapa() {
+
+  map = L.map("map").setView([-34.6037, -58.3816], 12);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(map);
+
+  markersLayer = L.layerGroup().addTo(map);
+}
 
 // ================================
 // CARGAR ENTREGAS (ADMIN)
 // ================================
 async function cargarEntregas() {
+
   tbody.innerHTML = "";
+  markersLayer.clearLayers();
 
   try {
+
     const res = await fetch("http://localhost:3000/entregas", {
       credentials: "include"
     });
@@ -29,6 +80,7 @@ async function cargarEntregas() {
 
     data.entregas.forEach(entrega => {
       agregarFila(entrega);
+      agregarMarcador(entrega);
     });
 
   } catch (error) {
@@ -37,32 +89,20 @@ async function cargarEntregas() {
 }
 
 // ================================
-// BADGES DE ESTADO
+// BADGES
 // ================================
 function obtenerBadgeEstado(estado) {
 
   switch (estado) {
 
     case "pendiente":
-      return `
-        <span class="px-2 py-1 text-xs font-semibold rounded bg-yellow-200 text-yellow-800">
-          Pendiente
-        </span>
-      `;
+      return `<span class="px-2 py-1 text-xs font-semibold rounded bg-yellow-200 text-yellow-800">Pendiente</span>`;
 
     case "confirmado":
-      return `
-        <span class="px-2 py-1 text-xs font-semibold rounded bg-green-200 text-green-800">
-          Confirmado
-        </span>
-      `;
+      return `<span class="px-2 py-1 text-xs font-semibold rounded bg-green-200 text-green-800">Confirmado</span>`;
 
     case "rechazado":
-      return `
-        <span class="px-2 py-1 text-xs font-semibold rounded bg-red-200 text-red-800">
-          Rechazado
-        </span>
-      `;
+      return `<span class="px-2 py-1 text-xs font-semibold rounded bg-red-200 text-red-800">Rechazado</span>`;
 
     default:
       return estado;
@@ -81,9 +121,9 @@ function agregarFila(e) {
     <td class="p-2 border-b">${e.usuario?.nombre ?? "N/A"}</td>
     <td class="p-2 border-b">${e.detalleMateriales}</td>
     <td class="p-2 border-b">${e.direccion}</td>
-    <td class="p-2 border-b">
-      ${obtenerBadgeEstado(e.estadoPuntos)}
-    </td>
+    <td class="p-2 border-b">${e.latitud ?? "-"}</td>
+    <td class="p-2 border-b">${e.longitud ?? "-"}</td>
+    <td class="p-2 border-b">${obtenerBadgeEstado(e.estadoPuntos)}</td>
     <td class="p-2 border-b flex gap-2">
       ${
         e.estadoPuntos === "pendiente"
@@ -107,6 +147,37 @@ function agregarFila(e) {
 }
 
 // ================================
+// AGREGAR MARCADOR AL MAPA
+// ================================
+function agregarMarcador(e) {
+
+  if (!e.latitud || !e.longitud) return;
+
+  let color;
+
+  switch (e.estadoPuntos) {
+    case "pendiente": color = "orange"; break;
+    case "confirmado": color = "green"; break;
+    case "rechazado": color = "red"; break;
+    default: color = "blue";
+  }
+
+  const marker = L.circleMarker([e.latitud, e.longitud], {
+    radius: 8,
+    color: color,
+    fillColor: color,
+    fillOpacity: 0.8
+  }).addTo(markersLayer);
+
+  marker.bindPopup(`
+    <strong>ID:</strong> ${e.idEntrega}<br>
+    <strong>Usuario:</strong> ${e.usuario?.nombre ?? "N/A"}<br>
+    <strong>Materiales:</strong> ${e.detalleMateriales}<br>
+    <strong>Estado:</strong> ${e.estadoPuntos}
+  `);
+}
+
+// ================================
 // CONFIRMAR ENTREGA
 // ================================
 window.confirmar = async function (id) {
@@ -116,55 +187,32 @@ window.confirmar = async function (id) {
 
   if (!pesoReal || !puntos) return;
 
-  try {
+  await fetch(`http://localhost:3000/entregas/${id}/confirmar`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({
+      pesoReal: Number(pesoReal),
+      puntosAOtorgar: Number(puntos)
+    })
+  });
 
-    const res = await fetch(`http://localhost:3000/entregas/${id}/confirmar`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        pesoReal: Number(pesoReal),
-        puntosAOtorgar: Number(puntos)
-      })
-    });
-
-    if (!res.ok) {
-      alert("Error al confirmar entrega");
-      return;
-    }
-
-    cargarEntregas();
-
-  } catch (error) {
-    console.error("Error al confirmar:", error);
-  }
+  cargarEntregas();
 };
 
 // ================================
-// RECHAZAR ENTREGA
+// RECHAZAR
 // ================================
 window.rechazar = async function (id) {
 
-  const confirmarRechazo = confirm("¿Seguro que desea rechazar esta entrega?");
-  if (!confirmarRechazo) return;
+  if (!confirm("¿Seguro que desea rechazar esta entrega?")) return;
 
-  try {
+  await fetch(`http://localhost:3000/entregas/${id}/rechazar`, {
+    method: "PATCH",
+    credentials: "include"
+  });
 
-    const res = await fetch(`http://localhost:3000/entregas/${id}/rechazar`, {
-      method: "PATCH",
-      credentials: "include"
-    });
-
-    if (!res.ok) {
-      alert("Error al rechazar entrega");
-      return;
-    }
-
-    cargarEntregas();
-
-  } catch (error) {
-    console.error("Error al rechazar:", error);
-  }
+  cargarEntregas();
 };
 
 // ================================
@@ -172,15 +220,9 @@ window.rechazar = async function (id) {
 // ================================
 logoutBtn.addEventListener("click", async () => {
 
-  try {
-    await fetch("http://localhost:3000/usuarios/logout", {
-      credentials: "include"
-    });
+  await fetch("http://localhost:3000/usuarios/logout", {
+    credentials: "include"
+  });
 
-    window.location.href = "/index.html";
-
-  } catch (error) {
-    console.error("Error al cerrar sesión:", error);
-  }
-
+  window.location.href = "/index.html";
 });
