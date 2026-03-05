@@ -1,30 +1,52 @@
-import type { Request, Response } from "express";
+import type { Response } from "express";
 import { AppDataSource } from "../data-source";
 import { EventoAmbiental } from "../entidades/EventoAmbiental";
+import { Usuario } from "../entidades/Usuarios";
 import { MoreThanOrEqual } from "typeorm";
 import type { DeepPartial } from "typeorm";
+import type { AuthenticatedRequest } from "../interfaces/AutenticatedRequest"; // Importa tu interfaz
 
 const eventRepository = AppDataSource.getRepository(EventoAmbiental);
+const usuarioRepository = AppDataSource.getRepository(Usuario);
 
 export class EventosController {
-  // ----------------------------------------------------
-  // OBTENER TODOS LOS EVENTOS
-  // ----------------------------------------------------
-  public getEvents = async (req: Request, res: Response) => {
+  // 1. OBTENER TODOS LOS EVENTOS (Con estado de inscripción)
+  public getEvents = async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { upcoming } = req.query;
-      let where: any = {};
 
+      // 1. Extraemos el ID del usuario autenticado.
+      // Asegúrate de usar la propiedad exacta que definiste en tu JWT (id o idUsuario)
+      const idUsuarioActual = req.user?.id;
+      console.log("ID del usuario autenticado:", idUsuarioActual);
+
+      let where: any = {};
       if (upcoming === "true") {
         where.fecha = MoreThanOrEqual(new Date());
       }
 
       const events = await eventRepository.find({
         where: where,
+        relations: ["usuarios"], // Cargamos la relación Many-to-Many
         order: { fecha: "ASC" },
       });
 
-      return res.json({ ok: true, data: events });
+      const data = events.map((event) => {
+        // 2. Comparamos asegurándonos de que ambos sean números
+        const estaInscrito =
+          event.usuarios?.some(
+            (u) => Number(u.idUsuario) === Number(idUsuarioActual),
+          ) || false;
+
+        return {
+          ...event,
+          inscrito: estaInscrito,
+          totalAsistentes: event.usuarios?.length || 0,
+          usuarios: undefined, // Limpiamos la respuesta
+        };
+      });
+
+      return res.json({ ok: true, data });
     } catch (error: any) {
       console.error("Error al obtener eventos:", error);
       return res
@@ -32,42 +54,124 @@ export class EventosController {
         .json({ ok: false, mensaje: "Error interno del servidor." });
     }
   };
-
-  // ----------------------------------------------------
-  // CREAR NUEVO EVENTO (Con Coordenadas)
-  // ----------------------------------------------------
-  public createEvent = async (req: Request, res: Response) => {
+  public getEventById = async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const {
-        nombre,
-        descripcion,
-        fecha,
-        ubicacion,
-        puntosOtorgados,
-        latitud,
-        longitud,
-      } = req.body;
+      const id = parseInt(String(req.params.id));
+      if (isNaN(id))
+        return res.status(400).json({ ok: false, mensaje: "ID inválido" });
 
-      // Validación extendida para incluir coordenadas si son obligatorias en tu lógica
+      const event = await eventRepository.findOneBy({ idEvento: id });
+
+      if (!event)
+        return res
+          .status(404)
+          .json({ ok: false, mensaje: "Evento no encontrado." });
+
+      return res.json({ ok: true, data: event });
+    } catch (error) {
+      return res.status(500).json({ ok: false, mensaje: "Error interno." });
+    }
+  };
+  // 2. INSCRIBIR USUARIO A EVENTO
+  public inscribirUsuario = async (
+    req: AuthenticatedRequest,
+    res: Response,
+  ) => {
+    try {
+      const idEvento = parseInt(String(req.params.idEvento));
+      const idUsuario = req.user?.id;
+
+      if (!idUsuario) {
+        return res
+          .status(401)
+          .json({ ok: false, mensaje: "Sesión no válida." });
+      }
+
+      const evento = await eventRepository.findOne({
+        where: { idEvento },
+        relations: ["usuarios"],
+      });
+
+      if (!evento) {
+        return res
+          .status(404)
+          .json({ ok: false, mensaje: "Evento no encontrado." });
+      }
+
+      const yaInscrito = evento.usuarios?.some(
+        (u) => u.idUsuario === idUsuario,
+      );
+      if (yaInscrito) {
+        return res
+          .status(400)
+          .json({ ok: false, mensaje: "Ya estás inscrito en este evento." });
+      }
+
+      const usuario = await usuarioRepository.findOneBy({ idUsuario });
+      if (!usuario) {
+        return res
+          .status(404)
+          .json({ ok: false, mensaje: "Usuario no encontrado." });
+      }
+
+      evento.usuarios = [...(evento.usuarios || []), usuario];
+      await eventRepository.save(evento);
+
+      return res.json({ ok: true, mensaje: "Inscripción exitosa." });
+    } catch (error) {
+      console.error(error);
+      return res
+        .status(500)
+        .json({ ok: false, mensaje: "Error al procesar inscripción." });
+    }
+  };
+
+  // 3. OBTENER EVENTOS POR USUARIO (Historial)
+  public getEventsByUser = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const idUsuario = parseInt(String(req.params.id));
+
+      if (isNaN(idUsuario)) {
+        return res
+          .status(400)
+          .json({ ok: false, mensaje: "ID de usuario inválido." });
+      }
+
+      const eventos = await eventRepository
+        .createQueryBuilder("evento")
+        .innerJoin("evento.usuarios", "usuario")
+        .where("usuario.id_usuario = :idUsuario", { idUsuario })
+        .orderBy("evento.fecha", "DESC")
+        .getMany();
+
+      return res.json({ ok: true, data: eventos });
+    } catch (error) {
+      console.error(error);
+      return res
+        .status(500)
+        .json({ ok: false, mensaje: "Error al obtener eventos del usuario." });
+    }
+  };
+
+  // 4. CREAR EVENTO
+  public createEvent = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { nombre, fecha, puntosOtorgados, latitud, longitud } = req.body;
+
       if (
         !nombre ||
         !fecha ||
-        puntosOtorgados === undefined ||
         latitud === undefined ||
         longitud === undefined
       ) {
-        return res.status(400).json({
-          ok: false,
-          mensaje:
-            "Faltan campos obligatorios: nombre, fecha, puntosOtorgados, latitud y longitud.",
-        });
+        return res
+          .status(400)
+          .json({ ok: false, mensaje: "Faltan campos obligatorios." });
       }
 
       const newEvent = eventRepository.create({
-        nombre,
-        descripcion,
+        ...req.body,
         fecha: new Date(fecha),
-        ubicacion,
         puntosOtorgados: Number(puntosOtorgados),
         latitud: parseFloat(latitud),
         longitud: parseFloat(longitud),
@@ -75,25 +179,16 @@ export class EventosController {
 
       await eventRepository.save(newEvent);
 
-      return res.status(201).json({
-        ok: true,
-        mensaje: "Evento creado exitosamente con coordenadas.",
-        data: newEvent,
-      });
+      return res.status(201).json({ ok: true, data: newEvent });
     } catch (error: any) {
-      console.error("Error al crear evento:", error);
       return res
         .status(500)
-        .json({ ok: false, mensaje: "Error interno del servidor." });
+        .json({ ok: false, mensaje: "Error al crear evento." });
     }
   };
-
-  // ----------------------------------------------------
-  // ACTUALIZAR EVENTO (Incluyendo Coordenadas)
-  // ----------------------------------------------------
-  public updateEvent = async (req: Request, res: Response) => {
+  public updateEvent = async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const id = parseInt(req.params.id as string);
+      const id = parseInt(String(req.params.id));
       const updateData = req.body;
 
       if (isNaN(id)) {
@@ -110,116 +205,26 @@ export class EventosController {
           .json({ ok: false, mensaje: "Evento no encontrado." });
       }
 
-      // Fusionar datos (esto cubrirá latitud y longitud si vienen en el body)
       eventRepository.merge(eventToUpdate, updateData);
-
-      // Limpieza y formateo de datos específicos
-      if (updateData.fecha) eventToUpdate.fecha = new Date(updateData.fecha);
-      if (updateData.latitud)
-        eventToUpdate.latitud = parseFloat(updateData.latitud);
-      if (updateData.longitud)
-        eventToUpdate.longitud = parseFloat(updateData.longitud);
-
       const updatedEvent = await eventRepository.save(eventToUpdate);
 
-      return res.json({
-        ok: true,
-        mensaje: "Evento actualizado exitosamente.",
-        data: updatedEvent,
-      });
-    } catch (error: any) {
-      console.error("Error al actualizar evento:", error);
-      return res
-        .status(500)
-        .json({ ok: false, mensaje: "Error interno del servidor." });
-    }
-  };
-
-  // ----------------------------------------------------
-  // OBTENER DETALLE DE UN EVENTO POR ID (Público)
-  // ----------------------------------------------------
-  public getEventById = async (req: Request, res: Response) => {
-    try {
-      // ** CORRECCIÓN: Usar req.params.id as string **
-      const id = parseInt(req.params.id as string);
-
-      // La ruta ya garantiza que 'id' existe, pero verificamos que sea un número válido.
-      if (isNaN(id)) {
-        return res
-          .status(400)
-          .json({ ok: false, mensaje: "ID de evento inválido." });
-      }
-
-      const event = await eventRepository.findOneBy({ idEvento: id });
-
-      if (!event) {
-        return res
-          .status(404)
-          .json({ ok: false, mensaje: "Evento no encontrado." });
-      }
-
-      return res.json({ ok: true, data: event });
-    } catch (error: any) {
-      console.error("Error al obtener evento por ID:", error);
-      return res
-        .status(500)
-        .json({ ok: false, mensaje: "Error interno del servidor." });
-    }
-  };
-
-  // ELIMINAR EVENTO (Solo Admin/Operador)
-  // ----------------------------------------------------
-  public deleteEvent = async (req: Request, res: Response) => {
-    try {
-      // ** CORRECCIÓN: Usar req.params.id as string **
-      const id = parseInt(req.params.id as string);
-
-      if (isNaN(id)) {
-        return res
-          .status(400)
-          .json({ ok: false, mensaje: "ID de evento inválido." });
-      }
-
-      const result = await eventRepository.delete(id);
-
-      if (result.affected === 0) {
-        return res
-          .status(404)
-          .json({ ok: false, mensaje: "Evento no encontrado." });
-      }
-
-      return res.status(200).json({
-        ok: true,
-        mensaje: "Evento ambiental eliminado exitosamente.",
-      });
-    } catch (error: any) {
-      console.error("Error al eliminar evento:", error);
-      return res
-        .status(500)
-        .json({ ok: false, mensaje: "Error interno del servidor." });
-    }
-  };
-  public getEventsByUser = async (req: Request, res: Response) => {
-    try {
-      const idUsuario = parseInt(String(req.params.id));
-
-      if (isNaN(idUsuario)) {
-        return res.status(400).json({ ok: false, mensaje: "ID inválido" });
-      }
-
-      const eventos = await eventRepository.find({
-        where: {
-          usuarios: {
-            idUsuario: idUsuario, // Filtra por la propiedad ID dentro de la relación
-          },
-        },
-        order: { fecha: "DESC" },
-      });
-
-      return res.json({ ok: true, eventos });
+      return res.json({ ok: true, data: updatedEvent });
     } catch (error) {
-      console.error(error);
-      return res.status(500).json({ ok: false, mensaje: "Error de servidor" });
+      return res
+        .status(500)
+        .json({ ok: false, mensaje: "Error al actualizar." });
+    }
+  };
+  // 5. ACTUALIZAR Y ELIMINAR (Se mantienen como los tenías, pero con AuthenticatedRequest)
+  public deleteEvent = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const id = parseInt(String(req.params.id));
+      const result = await eventRepository.delete(id);
+      if (result.affected === 0)
+        return res.status(404).json({ ok: false, mensaje: "No encontrado." });
+      return res.json({ ok: true, mensaje: "Evento eliminado." });
+    } catch (error: any) {
+      return res.status(500).json({ ok: false, mensaje: "Error al eliminar." });
     }
   };
 }

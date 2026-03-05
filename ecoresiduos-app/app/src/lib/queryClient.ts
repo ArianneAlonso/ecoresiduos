@@ -1,40 +1,61 @@
 import { QueryClient, QueryFunction, QueryKey } from "@tanstack/react-query";
+import { Platform } from "react-native";
+
+// 1. Definir la BASE_URL (Igual que antes, vital para móviles)
+const BASE_URL = Platform.select({
+  android: "http://10.0.2.2:3000", // IP del host en emulador Android
+  ios: "http://192.168.1.3:3000", // Tu IP local para iOS/Físico
+  default: "http://192.168.1.3:3000",
+});
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
+    const text = await res.text().catch(() => res.statusText);
     throw new Error(`${res.status}: ${text}`);
   }
 }
 
 export async function apiRequest(
   method: string,
-  url: string,
-  data?: unknown | undefined,
+  endpoint: string,
+  data?: unknown,
 ): Promise<Response> {
+  // Construir URL completa
+  const url = `${BASE_URL}${endpoint}`;
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
+    credentials: "include", // Importante para tus sesiones Express
   });
 
-  await throwIfResNotOk(res);
+  if (res.status !== 401) {
+    await throwIfResNotOk(res);
+  }
   return res;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
+
+// 2. Corregir el QueryFunction para móviles
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }: { queryKey: QueryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+  async ({ queryKey }) => {
+    // En web queryKey.join("/") funciona, en móvil necesitamos la BASE_URL
+    const endpoint = queryKey.join("/");
+    const url = `${BASE_URL}/${endpoint}`;
+
+    const res = await fetch(url, {
       credentials: "include",
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+      return null as any;
     }
 
     await throwIfResNotOk(res);
@@ -55,4 +76,3 @@ export const queryClient = new QueryClient({
     },
   },
 });
-export default function _() { return null; }
