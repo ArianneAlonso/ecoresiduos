@@ -12,7 +12,7 @@ import { Badge } from '../../src/components/ui/badge';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 
 const menuItems = [
-  { icon: MapPin, label: "Mi Ubicación", description: "Av. Principal 123" },
+  { icon: MapPin, label: "Mi Ubicación", description: "Nueva Formosa" },
   { icon: Bell, label: "Notificaciones", description: "Activas" },
   { icon: HelpCircle, label: "Ayuda y Soporte", description: "Centro de ayuda" },
 ];
@@ -35,26 +35,22 @@ export default function Profile() {
 
   return (
     <View style={styles.container}>
-      <AppHeader title="Mi Perfil" />
+      <AppHeader title="" />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <PointsCard points={1250} change={85} />
 
         <Card style={styles.profileCard}>
           <View style={styles.profileHeader}>
-            <View style={styles.customAvatar}>
-              <AvatarFallback style={styles.avatarFallback}>
-                U
-              </AvatarFallback>
-            </View>
+           
 
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>Usuario EcoResiduos</Text>
-              <Text style={styles.profileEmail}>usuario@email.com</Text>
+              <Text style={styles.profileName}>Abril</Text>
+              <Text style={styles.profileEmail}>abrilari43@gmail.com</Text>
 
               <Badge variant="secondary" style={styles.levelBadge}>
                 <Award size={12} color="#6b7280" style={styles.badgeIcon} />
-                Eco Warrior
+                EcoHeroína
               </Badge>
             </View>
           </View>

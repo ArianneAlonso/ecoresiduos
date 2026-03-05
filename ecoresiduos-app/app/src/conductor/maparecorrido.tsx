@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, Polyline } from 'react-native-maps';
+import MapView, { Marker } from 'react-native-maps';
+import MapViewDirections from 'react-native-maps-directions';
+
+const GOOGLE_MAPS_APIKEY = 'AIzaSyAJbBM69OpZ-QJxL2hdrLsJucqF41ffOVI';
 
 export default function MapaRecorrido() {
   const mapRef = useRef<MapView>(null);
@@ -74,10 +77,14 @@ export default function MapaRecorrido() {
             longitudeDelta: 0.01,
           }}
         >
-          <Polyline
-            coordinates={puntosRuta}
-            strokeColor="#4caf50"
+          <MapViewDirections
+            origin={puntosRuta[0]}
+            destination={puntosRuta[puntosRuta.length - 1]}
+            waypoints={puntosRuta.slice(1, -1)}
+            apikey={GOOGLE_MAPS_APIKEY}
             strokeWidth={4}
+            strokeColor="#4caf50"
+            mode="DRIVING"
           />
 
           <Marker

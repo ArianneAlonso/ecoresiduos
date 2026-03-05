@@ -93,9 +93,9 @@ const styles = StyleSheet.create({
 
 const variantStyles: Record<Variant, ViewStyle> = {
   default: {
-    backgroundColor: '#1f5c2e',
-    borderColor: '#2563eb',
-  },
+  backgroundColor: '#4caf50',
+  borderColor: '#4caf50',
+ },
   destructive: {
     backgroundColor: '#ef4444',
     borderColor: '#dc2626',

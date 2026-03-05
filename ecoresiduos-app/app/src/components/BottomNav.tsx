@@ -16,7 +16,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { icon: Home, label: "Inicio", path: "/" },
-  { icon: MapPin, label: "Mapa", path: "/map" },
+  { icon: MapPin, label: "Eventos", path: "/map" },
   { icon: Award, label: "Puntos", path: "/points" },
   { icon: Calendar, label: "Eventos", path: "/events" },
   { icon: User, label: "Perfil", path: "/profile" },

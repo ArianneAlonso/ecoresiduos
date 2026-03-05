@@ -22,18 +22,23 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const usuarios = [
-    {
-      email: 'conductor@gmail.com',
-      password: 'conductor1212',
-      rol: 'conductor',
-    },
-    {
-      email: 'usuario@gmail.com',
-      password: '1234',
-      rol: 'usuario',
-    },
-  ];
+ const usuarios = [
+  {
+    email: 'conductor@gmail.com',
+    password: 'conductor1212',
+    rol: 'conductor',
+  },
+  {
+    email: 'usuario@gmail.com',
+    password: '1234',
+    rol: 'usuario',
+  },
+  {
+    email: 'abrilari43@gmail.com',
+    password: 'abril',
+    rol: 'usuario', 
+  },
+];
 
   const handleLogin = () => {
     if (!email || !password) {

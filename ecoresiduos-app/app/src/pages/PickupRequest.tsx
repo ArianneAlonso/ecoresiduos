@@ -1,21 +1,23 @@
 import { useState } from 'react';
-import { Camera, CheckCircle2, Trash2, Wine, FileText, Cpu, Package, Leaf, MapPin, Calendar, Upload, Filter } from 'lucide-react-native';
-import AppHeader from '../../src/components/AppHeader';
+import { Camera, CheckCircle2, Trash2, Wine, FileText, Cpu, Package, Leaf, Calendar, Upload } from 'lucide-react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { ArrowLeft } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
 import MaterialCard from '../../src/components/MaterialCard';
 import { Button } from '../../src/components/ui/button';
 import { Card } from '../../src/components/ui/card';
 import { Input } from '../../src/components/ui/input';
 import { Label } from '../../src/components/ui/label';
 import { Badge } from '../../src/components/ui/badge';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { useCollections } from '../context/CollectionsContext';
 
 const materials = [
-  { id: "plastic", icon: Trash2, label: "Plástico" },
+  { id: "plastic", icon: Trash2, label: "Plastico" },
   { id: "glass", icon: Wine, label: "Vidrio" },
   { id: "paper", icon: FileText, label: "Papel" },
   { id: "metal", icon: Package, label: "Metal" },
-  { id: "electronics", icon: Cpu, label: "Electrónicos" },
-  { id: "organic", icon: Leaf, label: "Orgánicos" },
+  { id: "electronics", icon: Cpu, label: "Electronicos" },
+  { id: "organic", icon: Leaf, label: "Organicos" },
 ];
 
 const containerTypes = {
@@ -24,7 +26,7 @@ const containerTypes = {
     { id: "bolsa-consorcio", label: "Bolsa de consorcio / basura" },
     { id: "bolsa-cocina", label: "Bolsa pequeña de cocina" },
     { id: "bolsa-alpillera", label: "Bolsa alpillera" },
-    { id: "bolsa-malla", label: "Bolsa malla para jardín" },
+    { id: "bolsa-malla", label: "Bolsa malla para jardin" },
   ],
   cajas: [
     { id: "caja-pequeña", label: "Caja pequeña" },
@@ -32,8 +34,8 @@ const containerTypes = {
     { id: "caja-grande", label: "Caja grande" },
   ],
   bidones: [
-    { id: "bidon-pequeño", label: "Bidón pequeño" },
-    { id: "bidon-grande", label: "Bidón grande" },
+    { id: "bidon-pequeño", label: "Bidon pequeño" },
+    { id: "bidon-grande", label: "Bidon grande" },
   ],
   otros: [
     { id: "sueltos", label: "Residuos sueltos / a granel" },
@@ -42,6 +44,8 @@ const containerTypes = {
 };
 
 export default function PickupRequest() {
+  const navigation = useNavigation();
+  const { addCollection } = useCollections();
   const [step, setStep] = useState(1);
   const [scanMethod, setScanMethod] = useState<"scan" | "manual" | null>(null);
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
@@ -50,12 +54,13 @@ export default function PickupRequest() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState("");
   const [address, setAddress] = useState("");
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const scheduleOptions = [
     { id: "lunes-mañana", day: "Lunes", time: "Mañana", hours: "8:00 - 12:00" },
     { id: "martes-tarde", day: "Martes", time: "Tarde", hours: "14:00 - 18:00" },
-    { id: "miercoles-mañana", day: "Miércoles", time: "Mañana", hours: "8:00 - 12:00" },
-    { id: "jueves-tarde", day: "Jueves", time: "Tarde", hours: "14:00 - 18:00" },
+    { id: "miercoles-mañana", day: "Miercoles", time: "Mañana", hours: "8:00 - 12:00" },
+    { id: "viernes-tarde", day: "Viernes", time: "Tarde", hours: "14:00 - 18:00" },
   ];
 
   const toggleMaterial = (id: string) => {
@@ -65,10 +70,8 @@ export default function PickupRequest() {
   };
 
   const handleImageUpload = () => {
-    // Simular selección de imagen desde galería
     setImagePreview('https://via.placeholder.com/300x200/3b82f6/ffffff?text=Residuos');
     setIsAnalyzing(true);
-    
     setTimeout(() => {
       setSelectedMaterials(["plastic", "paper", "metal"]);
       setIsAnalyzing(false);
@@ -82,8 +85,16 @@ export default function PickupRequest() {
   };
 
   const handleSubmit = () => {
-    console.log('Solicitud enviada:', { selectedMaterials, selectedContainer, address, selectedSchedule });
+    addCollection({ selectedMaterials, selectedContainer, address, selectedSchedule });
     setStep(1);
+    setScanMethod(null);
+    setSelectedMaterials([]);
+    setSelectedContainer('');
+    setSelectedSchedule('');
+    setAddress('');
+    setImagePreview(null);
+    setToastMessage('Su solicitud ha sido registrada!');
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
   const getMaterialLabel = (id: string) => materials.find(m => m.id === id)?.label;
@@ -98,30 +109,38 @@ export default function PickupRequest() {
 
   return (
     <View style={styles.container}>
-      <AppHeader title="Solicitar Retiro" showBack />
+      {toastMessage && (
+        <View style={styles.toast}>
+          <Text style={styles.toastText}>{toastMessage}</Text>
+        </View>
+      )}
+
+      <View style={styles.hero}>
+        <TouchableOpacity style={styles.backIcon} onPress={() => navigation.goBack()}>
+          <ArrowLeft size={22} color="#ffffff" />
+        </TouchableOpacity>
+        <View style={styles.heroContent}>
+          <Text style={styles.heroTitle}>Solicitar Retiro</Text>
+          <Text style={styles.heroSubtitle}>Programa el retiro de tus reciclables</Text>
+        </View>
+      </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.progressBar}>
           {[1, 2, 3].map((s) => (
-            <View
-              key={s}
-              style={[
-                styles.progressStep,
-                s <= step && styles.progressStepActive
-              ]}
-            />
+            <View key={s} style={[styles.progressStep, s <= step && styles.progressStepActive]} />
           ))}
         </View>
 
         {step === 1 && (
           <View style={styles.stepContainer}>
             <Text style={styles.stepTitle}>Reconocimiento de materiales</Text>
-            <Text style={styles.stepDescription}>Escanea tus residuos o selecciónalos manualmente</Text>
+            <Text style={styles.stepDescription}>Escanea tus residuos o seleccionalos manualmente</Text>
 
             {!scanMethod ? (
               <View style={styles.methodCards}>
-                <TouchableOpacity 
-                  style={styles.methodCard} 
+                <TouchableOpacity
+                  style={styles.methodCard}
                   onPress={() => setScanMethod("scan")}
                   testID="card-scan-option"
                 >
@@ -129,13 +148,13 @@ export default function PickupRequest() {
                     <Camera size={24} color="#1f5c2e" />
                   </View>
                   <View>
-                    <Text style={styles.methodTitle}>Escanear con cámara</Text>
-                    <Text style={styles.methodDesc}>Usa IA para identificar automáticamente tus materiales</Text>
+                    <Text style={styles.methodTitle}>Escanear con camara</Text>
+                    <Text style={styles.methodDesc}>Usa IA para identificar tus materiales</Text>
                   </View>
                 </TouchableOpacity>
 
-                <TouchableOpacity 
-                  style={styles.methodCard} 
+                <TouchableOpacity
+                  style={styles.methodCard}
                   onPress={() => setScanMethod("manual")}
                   testID="card-manual-option"
                 >
@@ -143,8 +162,8 @@ export default function PickupRequest() {
                     <CheckCircle2 size={24} color="#6b7280" />
                   </View>
                   <View>
-                    <Text style={styles.methodTitle}>Selección manual</Text>
-                    <Text style={styles.methodDesc}>Elige tú mismo los tipos de materiales</Text>
+                    <Text style={styles.methodTitle}>Seleccion manual</Text>
+                    <Text style={styles.methodDesc}>Elige tu mismo los tipos de materiales</Text>
                   </View>
                 </TouchableOpacity>
               </View>
@@ -152,7 +171,7 @@ export default function PickupRequest() {
               <View style={styles.scanSection}>
                 <Card style={styles.uploadCard}>
                   {!imagePreview ? (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.uploadArea}
                       onPress={handleImageUpload}
                       testID="label-upload-image"
@@ -171,7 +190,6 @@ export default function PickupRequest() {
                       )}
                     </View>
                   )}
-
                   {selectedMaterials.length > 0 && !isAnalyzing && (
                     <View style={styles.materialsIdentified}>
                       <Text style={styles.materialsTitle}>Materiales identificados:</Text>
@@ -185,7 +203,6 @@ export default function PickupRequest() {
                     </View>
                   )}
                 </Card>
-
                 <Button
                   variant="outline"
                   onPress={() => {
@@ -196,7 +213,7 @@ export default function PickupRequest() {
                   style={styles.changeMethodButton}
                   testID="button-change-method"
                 >
-                  Cambiar método
+                  Cambiar metodo
                 </Button>
               </View>
             ) : (
@@ -212,7 +229,6 @@ export default function PickupRequest() {
                     />
                   ))}
                 </View>
-
                 <Button
                   variant="outline"
                   onPress={() => {
@@ -222,7 +238,7 @@ export default function PickupRequest() {
                   style={styles.changeMethodButton}
                   testID="button-change-method"
                 >
-                  Cambiar método
+                  Cambiar metodo
                 </Button>
               </View>
             )}
@@ -232,8 +248,7 @@ export default function PickupRequest() {
         {step === 2 && (
           <View style={styles.stepContainer}>
             <Text style={styles.stepTitle}>Tipo de envase</Text>
-            <Text style={styles.stepDescription}>¿En qué tipo de contenedor están tus residuos?</Text>
-
+            <Text style={styles.stepDescription}>En que tipo de contenedor estan tus residuos?</Text>
             <View style={styles.containerGroups}>
               {Object.entries(containerTypes).map(([type, containers]: [string, any]) => (
                 <View key={type} style={styles.containerGroup}>
@@ -246,7 +261,7 @@ export default function PickupRequest() {
                         key={container.id}
                         style={[
                           styles.containerCard,
-                          selectedContainer === container.id && styles.containerCardSelected
+                          selectedContainer === container.id && styles.containerCardSelected,
                         ]}
                         onPress={() => setSelectedContainer(container.id)}
                         testID={`card-container-${container.id}`}
@@ -273,9 +288,7 @@ export default function PickupRequest() {
               <Text style={styles.summaryTitle}>Resumen</Text>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Materiales:</Text>
-                <Text style={styles.summaryValue}>
-                  {selectedMaterials.map(getMaterialLabel).join(", ")}
-                </Text>
+                <Text style={styles.summaryValue}>{selectedMaterials.map(getMaterialLabel).join(", ")}</Text>
               </View>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Envase:</Text>
@@ -283,13 +296,8 @@ export default function PickupRequest() {
               </View>
             </Card>
 
-            <View style={styles.mapPlaceholder}>
-              <MapPin size={48} color="#6b7280" />
-              <Text style={styles.mapPlaceholderText}>Detectar ubicación</Text>
-            </View>
-
             <View style={styles.inputGroup}>
-              <Label>Dirección de retiro</Label>
+              <Label>Direccion de retiro</Label>
               <Input
                 placeholder="Ej: Av. Principal 123, Depto 4B"
                 value={address}
@@ -299,14 +307,14 @@ export default function PickupRequest() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Label>Selecciona día y horario</Label>
+              <Label>Selecciona dia y horario</Label>
               <View style={styles.scheduleGrid}>
                 {scheduleOptions.map((schedule) => (
                   <TouchableOpacity
                     key={schedule.id}
                     style={[
                       styles.scheduleCard,
-                      selectedSchedule === schedule.id && styles.scheduleCardSelected
+                      selectedSchedule === schedule.id && styles.scheduleCardSelected,
                     ]}
                     onPress={() => setSelectedSchedule(schedule.id)}
                     testID={`card-schedule-${schedule.id}`}
@@ -317,9 +325,7 @@ export default function PickupRequest() {
                         <Text style={styles.scheduleDay}>{schedule.day} - {schedule.time}</Text>
                         <Text style={styles.scheduleHours}>{schedule.hours}</Text>
                       </View>
-                      {selectedSchedule === schedule.id && (
-                        <CheckCircle2 size={20} color="#1f5c2e" />
-                      )}
+                      {selectedSchedule === schedule.id && <CheckCircle2 size={20} color="#1f5c2e" />}
                     </View>
                   </TouchableOpacity>
                 ))}
@@ -337,7 +343,7 @@ export default function PickupRequest() {
             style={styles.backButton}
             testID="button-back-step"
           >
-            Atrás
+            Atras
           </Button>
         )}
         <Button
@@ -354,8 +360,48 @@ export default function PickupRequest() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  content: { flex: 1, padding: 16, paddingBottom: 120 },
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  hero: {
+    backgroundColor: "#4CAF50",
+    paddingTop: 50,
+    paddingBottom: 30,
+    paddingHorizontal: 25,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  backIcon: {
+    position: "absolute",
+    top: 55,
+    left: 20,
+    zIndex: 10,
+  },
+  heroContent: {
+    marginTop: 10,
+  },
+  heroTitle: {
+    fontSize: 26,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+  },
+  heroSubtitle: {
+    fontSize: 15,
+    color: "#E8F5E9",
+    marginTop: 6,
+  },
+  content: {
+    flex: 1,
+    padding: 16,
+    paddingBottom: 120,
+  },
   progressBar: {
     flexDirection: 'row',
     gap: 8,
@@ -367,46 +413,83 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: '#e5e7eb',
   },
-  progressStepActive: { backgroundColor: '#1f5c2e' },
-  stepContainer: { gap: 16 },
-  stepTitle: { fontSize: 20, fontWeight: '600', color: '#111827' },
-  stepDescription: { fontSize: 16, color: '#6b7280' },
-  methodCards: { gap: 12 },
+  progressStepActive: {
+    backgroundColor: '#4caf50',
+  },
+  stepContainer: {
+    gap: 16,
+  },
+  stepTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1f5c2e',
+  },
+  stepDescription: {
+    fontSize: 16,
+    color: '#333',
+  },
+  methodCards: {
+    gap: 12,
+  },
   methodCard: {
     flexDirection: 'row',
     padding: 20,
     borderRadius: 12,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#c8e6c9',
   },
   methodIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#e8f5e9',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
   },
-  methodIconSecondary: { backgroundColor: '#f3f4f6' },
-  methodTitle: { fontSize: 16, fontWeight: '600', marginBottom: 4 },
-  methodDesc: { fontSize: 14, color: '#6b7280' },
-  scanSection: { gap: 16 },
-  uploadCard: { padding: 20 },
+  methodIconSecondary: {
+    backgroundColor: '#f1f8e9',
+  },
+  methodTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+    color: '#1f5c2e',
+  },
+  methodDesc: {
+    fontSize: 14,
+    color: '#555',
+  },
+  scanSection: {
+    gap: 16,
+  },
+  uploadCard: {
+    padding: 20,
+  },
   uploadArea: {
     height: 192,
     borderWidth: 2,
     borderStyle: 'dashed',
-    borderColor: '#d1d5db',
+    borderColor: '#a5d6a7',
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
   },
-  uploadText: { fontSize: 14, color: '#6b7280', textAlign: 'center' },
-  imagePreviewContainer: { position: 'relative' },
-  imagePreview: { width: '100%', height: 192, borderRadius: 12 },
+  uploadText: {
+    fontSize: 14,
+    color: '#555',
+    textAlign: 'center',
+  },
+  imagePreviewContainer: {
+    position: 'relative',
+  },
+  imagePreview: {
+    width: '100%',
+    height: 192,
+    borderRadius: 12,
+  },
   analyzingOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -414,39 +497,69 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 12,
   },
-  analyzingText: { color: '#fff', marginTop: 12, fontSize: 16 },
-  materialsIdentified: { marginTop: 16 },
-  materialsTitle: { fontSize: 14, fontWeight: '500', marginBottom: 8 },
-  badgesContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
-  badge: { paddingHorizontal: 8, paddingVertical: 4 },
+  analyzingText: {
+    color: '#fff',
+    marginTop: 12,
+    fontSize: 16,
+  },
+  materialsIdentified: {
+    marginTop: 16,
+  },
+  materialsTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 8,
+    color: '#1f5c2e',
+  },
+  badgesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#9ccc65',
+    color: '#fff',
+  },
   materialsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
     justifyContent: 'space-between',
   },
-  containerGroups: { gap: 20 },
+  containerGroups: {
+    gap: 20,
+  },
   containerGroup: {},
-  groupTitle: { fontSize: 16, fontWeight: '600', marginBottom: 12 },
-  containerList: { gap: 8 },
+  groupTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+    color: '#1f5c2e',
+  },
+  containerList: {
+    gap: 8,
+  },
   containerCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#c8e6c9',
+    backgroundColor: '#fff',
   },
   containerCardSelected: {
-    borderColor: '#1f5c2e',
-    backgroundColor: 'rgba(59, 130, 246, 0.05)',
+    borderColor: '#4caf50',
+    backgroundColor: 'rgba(156,204,101,0.2)',
   },
   radioCircle: {
     width: 20,
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#d1d5db',
+    borderColor: '#c8e6c9',
     marginRight: 12,
     justifyContent: 'center',
     alignItems: 'center',
@@ -455,38 +568,71 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#1f5c2e',
+    backgroundColor: '#4caf50',
   },
-  containerLabel: { fontSize: 16, flex: 1 },
-  summaryCard: { padding: 16 },
-  summaryTitle: { fontSize: 16, fontWeight: '600', marginBottom: 12 },
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  summaryLabel: { color: '#6b7280' },
-  summaryValue: { fontWeight: '500' },
-  mapPlaceholder: {
-    height: 192,
-    backgroundColor: '#f8fafc',
+  containerLabel: {
+    fontSize: 16,
+    flex: 1,
+    color: '#333',
+  },
+  summaryCard: {
+    padding: 16,
+    backgroundColor: '#f1f8e9',
     borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  mapPlaceholderText: { marginTop: 8, color: '#6b7280' },
-  inputGroup: { gap: 8 },
-  scheduleGrid: { gap: 12 },
+  summaryTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+    color: '#1f5c2e',
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  summaryLabel: {
+    color: '#555',
+  },
+  summaryValue: {
+    fontWeight: '500',
+    color: '#1f5c2e',
+  },
+  inputGroup: {
+    gap: 8,
+  },
+  scheduleGrid: {
+    gap: 12,
+  },
   scheduleCard: {
     padding: 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#c8e6c9',
+    backgroundColor: '#fff',
   },
   scheduleCardSelected: {
-    borderColor: '#1f5c2e',
-    backgroundColor: 'rgba(59, 130, 246, 0.05)',
+    borderColor: '#4caf50',
+    backgroundColor: 'rgba(156,204,101,0.2)',
   },
-  scheduleHeader: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  scheduleDay: { fontSize: 16, fontWeight: '600' },
-  scheduleHours: { fontSize: 14, color: '#6b7280' },
-  changeMethodButton: { marginTop: 8 },
+  scheduleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  scheduleDay: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f5c2e',
+  },
+  scheduleHours: {
+    fontSize: 14,
+    color: '#555',
+  },
+  changeMethodButton: {
+    marginTop: 8,
+  },
   bottomActions: {
     flexDirection: 'row',
     gap: 12,
@@ -494,6 +640,25 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     backgroundColor: '#fff',
   },
-  backButton: { flex: 1 },
-  nextButton: { flex: 1 },
+  backButton: {
+    flex: 1,
+  },
+  nextButton: {
+    flex: 1,
+  },
+  toast: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    right: 16,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#4caf50',
+    zIndex: 999,
+    alignItems: 'center',
+  },
+  toastText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
 });

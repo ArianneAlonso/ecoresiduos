@@ -11,6 +11,7 @@ import Login from './app/src/pages/Login';
 import Register from './app/src/pages/Register';
 import Home from './app/src/pages/Home';
 import PickupRequest from './app/src/pages/PickupRequest';
+import { CollectionsProvider } from './app/src/context/CollectionsContext';
 import Map from './app/src/pages/Map';
 import Points from './app/src/pages/Points';
 import Events from './app/src/pages/Events';
@@ -43,23 +44,59 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function MainTabs() {
   return (
-    <Tab.Navigator screenOptions={{ headerShown: false }}>
-      <Tab.Screen name="Home" component={Home} />
-      <Tab.Screen name="Pickup" component={PickupRequest} />
-      <Tab.Screen name="Map" component={Map} />
-      <Tab.Screen name="Points" component={Points} />
-      <Tab.Screen name="Profile" component={Profile} />
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarShowLabel: true,
+        tabBarActiveTintColor: '#28a745',
+        tabBarInactiveTintColor: '#6c757d',
+        tabBarStyle: {
+          backgroundColor: '#ffffff',
+          borderTopWidth: 0,
+          elevation: 5,
+        },
+        tabBarIcon: () => null,
+        tabBarLabelStyle: {
+          fontSize: 12,        // tamaño de letra más grande
+          fontWeight: 'bold',  // negrita
+          textTransform: 'capitalize', // opcional, para capitalizar el texto
+        },
+      }}
+    >
+      <Tab.Screen name="Inicio" component={Home} />
+      <Tab.Screen name="Recoleccion" component={PickupRequest} />
+      <Tab.Screen name="Eventos" component={Map} />
+      <Tab.Screen name="Puntos" component={Points} />
+      <Tab.Screen name="Perfil" component={Profile} />
     </Tab.Navigator>
   );
 }
-
 function ConductorTabs() {
   return (
-    <Tab.Navigator screenOptions={{ headerShown: false }}>
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarShowLabel: true,
+        tabBarActiveTintColor: '#28a745',
+        tabBarInactiveTintColor: '#6c757d',
+        tabBarStyle: {
+          backgroundColor: '#ffffff',
+          borderTopWidth: 0,
+          elevation: 5,
+        },
+        tabBarIcon: () => null,
+        tabBarLabelStyle: {
+          fontSize: 16,       
+          fontWeight: 'bold',  
+          textTransform: 'capitalize', 
+        },
+      }}
+    >
       <Tab.Screen name="Inicio" component={HomeConductor} />
       <Tab.Screen name="Mapa" component={MapaRecorrido} />
       <Tab.Screen name="QR" component={QR} />
-    </Tab.Navigator>
+      </Tab.Navigator>
+  
   );
 }
 
@@ -80,18 +117,19 @@ function AppRouter() {
     </Stack.Navigator>
   );
 }
-
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <TooltipProvider>
-          <NavigationContainer>
-            <AppRouter />
-          </NavigationContainer>
-          <Toaster />
-        </TooltipProvider>
-      </ToastProvider>
-    </QueryClientProvider>
+    <CollectionsProvider>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <TooltipProvider>
+            <NavigationContainer>
+              <AppRouter />
+            </NavigationContainer>
+            <Toaster />
+          </TooltipProvider>
+        </ToastProvider>
+      </QueryClientProvider>
+    </CollectionsProvider>
   );
 }

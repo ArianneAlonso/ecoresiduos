@@ -53,7 +53,7 @@ const variantStyles: Record<Variant, any> = {
     backgroundColor: '#1f5c2e',
   },
   secondary: {
-    backgroundColor: '#6b7280',
+    backgroundColor: '#81c784',
   },
   destructive: {
     backgroundColor: '#ef4444',

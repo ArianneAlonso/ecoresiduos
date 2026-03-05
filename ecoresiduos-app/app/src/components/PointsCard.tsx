@@ -26,7 +26,7 @@ export default function PointsCard({ points, change }: PointsCardProps) {
             )}
           </View>
           <View style={styles.iconContainer}>
-            <Award size={32} color="#fff" />
+            <Award size={32} color="#4caf50" />
           </View>
         </View>
       </Card>
@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
   },
   card: {
     padding: 24,
-    backgroundColor: 'transparent',
+    backgroundColor: '#4caf50',
   },
   content: {
     flexDirection: 'row',
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgb(255, 255, 255)',
     justifyContent: 'center',
     alignItems: 'center',
   },
