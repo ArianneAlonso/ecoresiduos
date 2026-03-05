@@ -74,7 +74,7 @@ registerForm.addEventListener("submit", async (e) => {
     registerMsg.className = "text-green-600 text-center mt-3";
 
     setTimeout(() => {
-      window.location.href = "/ecoresiduo/public/login.html";
+      window.location.href = "/login.html";
     }, 1200);
 
   } catch (error) {

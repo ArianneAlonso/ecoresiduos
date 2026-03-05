@@ -11,22 +11,89 @@ const formularioContainer = document.getElementById("formularioContainer");
 const btnMostrarForm = document.getElementById("btnMostrarForm");
 const btnCancelar = document.getElementById("btnCancelar");
 const formEntrega = document.getElementById("formEntrega");
-
-/* =========================================
-   MAPA
-========================================= */
+const toastExito = document.getElementById("toastExito");
 
 let map;
 let markersLayer;
+let seleccionLayer;
+
+let latSeleccionada = null;
+let lngSeleccionada = null;
+
+/* =========================================
+   MAPA - FORMOSA
+========================================= */
 
 function inicializarMapa() {
-  map = L.map("map").setView([-34.6037, -58.3816], 12); // Buenos Aires default
+
+  const formosaCoords = [-26.1775, -58.1781];
+
+  map = L.map("map").setView(formosaCoords, 13);
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "&copy; OpenStreetMap contributors"
   }).addTo(map);
 
   markersLayer = L.layerGroup().addTo(map);
+  seleccionLayer = L.layerGroup().addTo(map);
+
+  map.on("click", function (e) {
+
+    const { lat, lng } = e.latlng;
+
+    latSeleccionada = lat;
+    lngSeleccionada = lng;
+
+    seleccionLayer.clearLayers();
+
+    const marker = L.marker([lat, lng]).addTo(seleccionLayer);
+
+    marker.bindPopup(`
+      <strong>Ubicación seleccionada</strong><br>
+      Lat: ${lat.toFixed(6)}<br>
+      Lng: ${lng.toFixed(6)}
+    `).openPopup();
+
+    mostrarFilaSeleccionada(lat, lng);
+  });
+}
+
+/* =========================================
+   MOSTRAR FILA SELECCIONADA
+========================================= */
+
+function mostrarFilaSeleccionada(lat, lng) {
+
+  const filaAnterior = document.getElementById("filaSeleccionada");
+  if (filaAnterior) filaAnterior.remove();
+
+  const tr = document.createElement("tr");
+  tr.id = "filaSeleccionada";
+
+  tr.innerHTML = `
+    <td class="p-2 border-b text-blue-600 font-semibold">
+      Nueva
+    </td>
+    <td class="p-2 border-b">
+      Seleccionado en mapa
+    </td>
+    <td class="p-2 border-b">
+      Formosa, Argentina
+    </td>
+    <td class="p-2 border-b font-semibold text-green-600">
+      ${lat.toFixed(6)}
+    </td>
+    <td class="p-2 border-b font-semibold text-green-600">
+      ${lng.toFixed(6)}
+    </td>
+    <td class="p-2 border-b">
+      <span class="px-2 py-1 text-xs font-semibold rounded bg-blue-200 text-blue-800">
+        Pendiente de enviar
+      </span>
+    </td>
+  `;
+
+  tbody.prepend(tr);
 }
 
 /* =========================================
@@ -34,14 +101,15 @@ function inicializarMapa() {
 ========================================= */
 
 async function cargarEntregas() {
+
   try {
+
     const res = await fetch(`${API}/entregas/mis-entregas`, {
       method: "GET",
       credentials: "include"
     });
 
     if (res.status === 401) {
-      alert("Debes iniciar sesión.");
       window.location.href = "/login.html";
       return;
     }
@@ -73,48 +141,39 @@ async function cargarEntregas() {
       }
     });
 
-    // Centrar mapa automáticamente
     if (coordenadas.length > 0) {
       map.fitBounds(coordenadas);
     }
 
   } catch (error) {
     console.error("Error cargando entregas:", error);
-    alert("Error al cargar las entregas.");
   }
 }
 
 /* =========================================
-   BADGES DE ESTADO
+   BADGE ESTADO
 ========================================= */
 
 function badgeEstado(estado) {
+
   switch (estado) {
     case "pendiente":
-      return `
-        <span class="px-2 py-1 text-xs font-semibold rounded bg-yellow-200 text-yellow-800">
-          Pendiente
-        </span>`;
+      return `<span class="px-2 py-1 text-xs font-semibold rounded bg-yellow-200 text-yellow-800">Pendiente</span>`;
     case "confirmado":
-      return `
-        <span class="px-2 py-1 text-xs font-semibold rounded bg-green-200 text-green-800">
-          Confirmado
-        </span>`;
+      return `<span class="px-2 py-1 text-xs font-semibold rounded bg-green-200 text-green-800">Confirmado</span>`;
     case "rechazado":
-      return `
-        <span class="px-2 py-1 text-xs font-semibold rounded bg-red-200 text-red-800">
-          Rechazado
-        </span>`;
+      return `<span class="px-2 py-1 text-xs font-semibold rounded bg-red-200 text-red-800">Rechazado</span>`;
     default:
       return estado;
   }
 }
 
 /* =========================================
-   AGREGAR FILA A TABLA
+   AGREGAR FILA DESDE BACKEND
 ========================================= */
 
 function agregarFila(e) {
+
   const tr = document.createElement("tr");
 
   tr.innerHTML = `
@@ -132,7 +191,7 @@ function agregarFila(e) {
 }
 
 /* =========================================
-   AGREGAR MARCADOR AL MAPA
+   MARCADOR ENTREGAS
 ========================================= */
 
 function agregarMarcador(e) {
@@ -149,7 +208,7 @@ function agregarMarcador(e) {
 }
 
 /* =========================================
-   MOSTRAR / OCULTAR FORMULARIO
+   MOSTRAR / OCULTAR FORM
 ========================================= */
 
 btnMostrarForm.addEventListener("click", () => {
@@ -167,6 +226,11 @@ btnCancelar.addEventListener("click", () => {
 formEntrega.addEventListener("submit", async function (e) {
   e.preventDefault();
 
+  if (!latSeleccionada || !lngSeleccionada) {
+    alert("Debes seleccionar una ubicación en el mapa.");
+    return;
+  }
+
   const materialesSeleccionados = Array.from(
     document.querySelectorAll('input[type="checkbox"]:checked')
   ).map(c => c.value);
@@ -180,39 +244,47 @@ formEntrega.addEventListener("submit", async function (e) {
     materiales: materialesSeleccionados,
     tipoEnvase: document.getElementById("tipoEnvase").value,
     direccion: document.getElementById("direccion").value,
-    horarioPreferencia: document.getElementById("horario").value
+    horarioPreferencia: document.getElementById("horario").value,
+    latitud: latSeleccionada,
+    longitud: lngSeleccionada
   };
 
   try {
+
     const res = await fetch(`${API}/entregas`, {
       method: "POST",
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     });
-
-    if (res.status === 401) {
-      alert("Sesión expirada. Inicia sesión nuevamente.");
-      window.location.href = "/login.html";
-      return;
-    }
 
     const data = await res.json();
 
     if (res.ok) {
-      alert("Solicitud creada correctamente 🎉");
+
+      // Mostrar toast animado
+      toastExito.classList.remove("translate-x-full", "opacity-0");
+      toastExito.classList.add("translate-x-0", "opacity-100");
+
+      setTimeout(() => {
+        toastExito.classList.remove("translate-x-0", "opacity-100");
+        toastExito.classList.add("translate-x-full", "opacity-0");
+      }, 3000);
+
       formEntrega.reset();
       formularioContainer.classList.add("hidden");
-      cargarEntregas(); // 🔄 Recargar tabla y mapa
+      seleccionLayer.clearLayers();
+      latSeleccionada = null;
+      lngSeleccionada = null;
+
+      cargarEntregas();
+
     } else {
       alert(data.message || "Error al crear la solicitud.");
     }
 
   } catch (error) {
     console.error("Error creando entrega:", error);
-    alert("Error interno al crear la solicitud.");
   }
 });
 

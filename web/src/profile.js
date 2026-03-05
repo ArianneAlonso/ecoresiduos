@@ -9,8 +9,8 @@ document.addEventListener("DOMContentLoaded", () => {
 // ========================
 async function cargarPerfil() {
   try {
-    const res = await fetch("http://localhost:3000/perfil", {
-      credentials: "include"
+    const res = await fetch("http://localhost:3000/usuarios", {
+      credentials: "include",
     });
 
     if (res.status === 401) {
@@ -20,9 +20,19 @@ async function cargarPerfil() {
 
     const data = await res.json();
 
-    cargarInfoUsuario(data);
-    cargarEntregas(data.historialEntregas || []);
-    cargarEventos(data.participacionEventos || []);
+    // ⚠️ El backend devuelve un array
+    if (!Array.isArray(data) || data.length === 0) {
+      console.error("No se encontró usuario");
+      return;
+    }
+
+    const usuario = data[0];
+
+    cargarInfoUsuario(usuario);
+
+    // Por ahora no vienen entregas ni eventos desde backend
+    cargarEntregas([]);
+    cargarEventos([]);
 
   } catch (err) {
     console.error("Error al cargar perfil:", err);
@@ -41,11 +51,11 @@ function cargarInfoUsuario(u) {
     <p><strong>Rol:</strong> ${u.rol}</p>
     <p><strong>Puntos acumulados:</strong>
       <span class="text-green-600 font-bold">
-        ${u.puntosAcumulados}
+        ${u.puntosAcumulados ?? 0}
       </span>
     </p>
     <p><strong>Miembro desde:</strong>
-      ${new Date(u.fechaRegistro).toLocaleDateString()}
+      ${u.fechaRegistro ? new Date(u.fechaRegistro).toLocaleDateString() : "-"}
     </p>
   `;
 }
@@ -57,7 +67,7 @@ function cargarEntregas(lista) {
   const tbody = document.getElementById("tablaEntregas");
   tbody.innerHTML = "";
 
-  if (lista.length === 0) {
+  if (!lista || lista.length === 0) {
     tbody.innerHTML = `
       <tr>
         <td colspan="6" class="p-4 text-center text-gray-500">
@@ -68,7 +78,7 @@ function cargarEntregas(lista) {
     return;
   }
 
-  lista.forEach(e => {
+  lista.forEach((e) => {
     tbody.innerHTML += `
       <tr class="border-b border-gray-300 dark:border-gray-700">
         <td class="p-2">${e.material}</td>
@@ -89,7 +99,7 @@ function cargarEventos(eventos) {
   const tbody = document.getElementById("tablaEventos");
   tbody.innerHTML = "";
 
-  if (eventos.length === 0) {
+  if (!eventos || eventos.length === 0) {
     tbody.innerHTML = `
       <tr>
         <td colspan="4" class="p-4 text-center text-gray-500">
@@ -100,7 +110,7 @@ function cargarEventos(eventos) {
     return;
   }
 
-  eventos.forEach(ev => {
+  eventos.forEach((ev) => {
     tbody.innerHTML += `
       <tr class="border-b border-gray-300 dark:border-gray-700">
         <td class="p-2">${ev.idTransaccion}</td>
@@ -123,7 +133,7 @@ function configurarLogout() {
   btnLogout.addEventListener("click", async () => {
     try {
       await fetch("http://localhost:3000/usuarios/logout", {
-        credentials: "include"
+        credentials: "include",
       });
 
       window.location.href = "/index.html";

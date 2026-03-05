@@ -1,38 +1,171 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EcoResiduos - Bienvenido</title>
-  <link rel="icon" type="image/png" href="/public/assets/favicon.png">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EcoResiduos - Inicio</title>
+  <link rel="icon" type="image/png" href="/assets/favicon.png" />
+  <link rel="stylesheet" href="./src/style.css">
 </head>
-<body class="bg-green-50 flex items-center justify-center min-h-screen">
 
-  <div class="bg-white shadow-xl rounded-3xl flex flex-col md:flex-row w-11/12 md:w-3/4 max-w-4xl overflow-hidden">
-    <!-- Imagen / Avatar -->
-    <div class="bg-green-200 flex justify-center items-center p-8 md:w-1/2">
-      <img src="/assets/avatar.png" alt="EcoResiduos personaje" class="w-72">
+<body class="bg-white text-black dark:bg-gray-900 dark:text-white transition-colors duration-300">
+
+  <!-- NAVBAR -->
+  <nav class="bg-white dark:bg-gray-800 shadow-md px-6 py-4 flex justify-between items-center sticky top-0 z-20">
+    
+    <div class="flex items-center space-x-3">
+      <img src="/assets/logo.png" alt="logo" class="w-8 h-8">
+      <span class="text-2xl font-bold text-green-600 dark:text-green-400">
+        EcoResiduos
+      </span>
     </div>
 
-    <!-- Contenido principal -->
-    <div class="flex flex-col justify-center items-center text-center p-8 md:w-1/2">
-      <h1 class="text-3xl font-bold text-gray-800 mb-4">
-        ¡Bienvenido a <span class="text-green-600">EcoResiduos</span>!
-      </h1>
-      <p class="text-gray-600 mb-8">Elegí una opción para comenzar</p>
+    <ul class="hidden md:flex space-x-6 font-semibold items-center">
+      <li><a href="index.html" class="text-green-900 dark:text-green-400 font-bold">Inicio</a></li>
+      <li><a href="mapa.html" class="hover:text-green-900 dark:hover:text-green-300">Mapa</a></li>
+      <li><a href="estadistica.html" class="hover:text-green-900 dark:hover:text-green-300">Estadísticas</a></li>
+      <li><a href="consejos.html" class="hover:text-green-900 dark:hover:text-green-300">Consejos</a></li>
+      <li><a href="entregas_usuarios.html" class="hover:text-green-900 dark:hover:text-green-300">Entregas</a></li>
+      <li id="navPerfil" class="hidden">
+        <a href="perfil.html" class="hover:text-green-900 dark:hover:text-green-300">Perfil</a>
+      </li>
+    </ul>
 
-      <div class="flex flex-col space-y-4 w-full max-w-xs">
-        <a href="/login.html" 
-           class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 rounded-lg transition">
-          Iniciar sesión
-        </a>
-        <a href="/register.html" 
-           class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 rounded-lg transition">
-          Registrarse
-        </a>
+    <div class="flex items-center space-x-4">
+
+      <!-- DARK MODE -->
+      <button
+        id="toggleDark"
+        class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+      >
+        <i data-lucide="moon"></i>
+      </button>
+
+      
+
+      <!-- LOGIN -->
+      <a id="loginBtn"
+         href="/usuarios/login.html"
+         class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition">
+        Iniciar sesión
+      </a>
+
+      <!-- REGISTER -->
+      <a id="registerBtn"
+         href="/register.html"
+         class="px-4 py-2 border border-green-600 hover:bg-green-600 hover:text-white text-green-600 rounded-lg font-semibold transition">
+        Registrarse
+      </a>
+
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <header class="pt-32 pb-20 text-center max-w-4xl mx-auto px-6">
+    <h1 class="text-5xl font-bold mb-6">
+      Clasificación inteligente de residuos para una ciudad más limpia
+    </h1>
+    <p class="text-lg text-gray-600 dark:text-gray-300">
+      Aprendé fácilmente qué residuo va en cada contenedor y ayudá a tu comunidad
+      a mejorar la gestión ambiental. Tecnología simple, impacto real.
+    </p>
+
+    <a href="#categorias"
+       class="mt-8 inline-block px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700">
+      Empezar a aprender
+    </a>
+  </header>
+
+  <!-- CATEGORÍAS -->
+  <section id="categorias" class="max-w-7xl mx-auto px-6 pb-20">
+    <h2 class="text-3xl font-bold text-center mb-10">
+      Categorías de residuos
+    </h2>
+
+    <div id="categoriesContainer"
+         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
+    </div>
+  </section>
+
+  <!-- BENEFICIOS -->
+  <section class="bg-green-600 dark:bg-green-700 text-white py-20">
+    <div class="max-w-6xl mx-auto text-center px-6">
+      <h2 class="text-3xl font-bold mb-6">
+        ¿Por qué clasificar residuos?
+      </h2>
+
+      <p class="text-lg mb-10 opacity-90">
+        Clasificar los residuos reduce la contaminación, mejora el reciclaje,
+        disminuye costos municipales y convierte a las ciudades en espacios más sostenibles.
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+        
+        <div class="p-6 bg-white/10 rounded-2xl shadow text-center">
+          <i data-lucide="leaf" class="w-10 h-10 mx-auto mb-4"></i>
+          <h3 class="font-bold text-xl mb-2">Menos contaminación</h3>
+          <p class="opacity-80">
+            Separar residuos evita que toneladas terminen en vertederos.
+          </p>
+        </div>
+
+        <div class="p-6 bg-white/10 rounded-2xl shadow text-center">
+          <i data-lucide="recycle" class="w-10 h-10 mx-auto mb-4"></i>
+          <h3 class="font-bold text-xl mb-2">Mayor recuperación</h3>
+          <p class="opacity-80">
+            Maximizamos el material que puede reutilizarse.
+          </p>
+        </div>
+
+        <div class="p-6 bg-white/10 rounded-2xl shadow text-center">
+          <i data-lucide="users" class="w-10 h-10 mx-auto mb-4"></i>
+          <h3 class="font-bold text-xl mb-2">Educación social</h3>
+          <p class="opacity-80">
+            Promueve ciudadanía responsable y consciente.
+          </p>
+        </div>
+
       </div>
     </div>
-  </div>
- <script type="module" src="index.js"></script>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="bg-green-700 text-white py-8 mt-auto">
+    <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-6">
+
+      <div>
+        <h3 class="font-bold text-lg">EcoResiduos</h3>
+        <p class="text-sm text-green-100 mt-2">
+          Plataforma dedicada a fomentar el reciclaje y la economía circular en tu comunidad.
+        </p>
+      </div>
+
+      <div>
+        <h4 class="font-semibold">Enlaces</h4>
+        <ul class="text-sm mt-2 space-y-1">
+          <li><a href="./mapa.html" class="hover:underline">Mapa</a></li>
+          <li><a href="./estadistica.html" class="hover:underline">Estadísticas</a></li>
+          
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="font-semibold">Contacto</h4>
+        <p class="text-sm mt-2">contacto@ecoresiduos.dev</p>
+      </div>
+
+    </div>
+
+    <div class="mt-6 text-center text-green-200 text-sm">
+      © 2025 EcoResiduos. Todos los derechos reservados.
+    </div>
+  </footer>
+
+  <!-- ICONOS -->
+  <script src="https://unpkg.com/lucide/dist/lucide.min.js"></script>
+
+  <!-- JS PRINCIPAL -->
+  <script type="module" src="./index.js"></script>
+
 </body>
 </html>

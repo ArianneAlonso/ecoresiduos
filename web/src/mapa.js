@@ -5,11 +5,28 @@ const API_URL = "http://localhost:3000";
 
 document.addEventListener("DOMContentLoaded", async () => {
 
-  const map = L.map("map").setView([-34.5612, -58.4565], 13);
+  // 📍 Centro en Formosa Capital
+  const map = L.map("map").setView([-26.1775, -58.1781], 13);
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "&copy; OpenStreetMap contributors",
   }).addTo(map);
+
+  // 🗑️ Icono personalizado para contenedores
+  const contenedorIcon = L.icon({
+    iconUrl: "https://cdn-icons-png.flaticon.com/512/679/679720.png", 
+    iconSize: [35, 35],
+    iconAnchor: [17, 35],
+    popupAnchor: [0, -30],
+  });
+
+  // 📍 Icono para usuario
+  const userIcon = L.icon({
+    iconUrl: "https://cdn-icons-png.flaticon.com/512/64/64113.png",
+    iconSize: [30, 30],
+    iconAnchor: [15, 30],
+    popupAnchor: [0, -25],
+  });
 
   let CONTENEDORES = [];
   let markers = [];
@@ -21,7 +38,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const infoCercano = document.getElementById("infoCercano");
 
   // =====================================================
-  // 🔹 OBTENER CONTENEDORES DEL BACKEND
+  // 🔹 OBTENER CONTENEDORES
   // =====================================================
   async function fetchContenedores() {
     try {
@@ -51,9 +68,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // =====================================================
-  // 🔹 PARSEAR MATERIALES
-  // =====================================================
   function parseMateriales(str) {
     if (!str) return [];
     return str
@@ -75,7 +89,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       ? CONTENEDORES
       : CONTENEDORES.filter(c => c.materiales.includes(tipo));
 
-    // Limpiar marcadores
     markers.forEach(m => m.remove());
     markers = [];
 
@@ -90,17 +103,17 @@ document.addEventListener("DOMContentLoaded", async () => {
           <div class="text-sm text-gray-600">${c.direccion}</div>
           <div class="text-xs text-gray-500">${c.materiales.join(", ")}</div>
         </div>
-        <button class="text-sm text-blue-600 hover:underline">Ver</button>
+        <button class="text-sm text-green-600 hover:underline">Ver</button>
       `;
 
       li.querySelector("button").addEventListener("click", () => {
-        map.flyTo([c.lat, c.lng], 16, { duration: 0.8 });
+        map.flyTo([c.lat, c.lng], 17, { duration: 0.8 });
       });
 
       listaCont.appendChild(li);
 
-      // Marcador
-      const marker = L.marker([c.lat, c.lng])
+      // 📍 Marcador con icono personalizado
+      const marker = L.marker([c.lat, c.lng], { icon: contenedorIcon })
         .bindPopup(`
           <b>${c.nombre}</b><br>
           ${c.direccion}<br>
@@ -116,7 +129,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   filtro.addEventListener("change", renderContenedores);
 
   // =====================================================
-  // 🔹 UBICACIÓN
+  // 🔹 UBICACIÓN DEL USUARIO
   // =====================================================
   document.getElementById("btnUbicacion").addEventListener("click", () => {
     if (!navigator.geolocation) return;
@@ -126,7 +139,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (userMarker) userMarker.remove();
 
-      userMarker = L.marker([latitude, longitude])
+      userMarker = L.marker([latitude, longitude], { icon: userIcon })
         .addTo(map)
         .bindPopup("Tu ubicación")
         .openPopup();
@@ -143,16 +156,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (!userPos) return;
 
-    const tipo = filtro.value;
-    const filtrados = tipo === "Todos"
-      ? CONTENEDORES
-      : CONTENEDORES.filter(c => c.materiales.includes(tipo));
-
     let nearest = null;
     let minDist = Infinity;
 
-    filtrados.forEach(c => {
-      const d = distanceMeters(userPos[0], userPos[1], c.lat, c.lng);
+    CONTENEDORES.forEach(c => {
+      const d = map.distance(userPos, [c.lat, c.lng]);
       if (d < minDist) {
         minDist = d;
         nearest = { ...c, dist: Math.round(d) };
@@ -167,26 +175,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         <div>${nearest.direccion}</div>
         <div>${nearest.dist} m</div>
       `;
-      map.flyTo([nearest.lat, nearest.lng], 16, { duration: 0.8 });
+
+      map.flyTo([nearest.lat, nearest.lng], 17, { duration: 0.8 });
     }
   });
-
-  // =====================================================
-  // 🔹 DISTANCIA
-  // =====================================================
-  function distanceMeters(lat1, lon1, lat2, lon2) {
-    const R = 6371000;
-    const toRad = deg => (deg * Math.PI) / 180;
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos(toRad(lat1)) *
-        Math.cos(toRad(lat2)) *
-        Math.sin(dLon / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  }
 
   // =====================================================
   // 🔹 LOGOUT

@@ -13,7 +13,7 @@ let markersLayer;
 // INICIO
 // ================================
 document.addEventListener("DOMContentLoaded", () => {
-  inicializarModoOscuro(); // 🌙 Dark mode
+  inicializarModoOscuro();
   inicializarMapa();
   cargarEntregas();
 });
@@ -26,7 +26,6 @@ function inicializarModoOscuro() {
   const toggleBtn = document.getElementById("toggleDark");
   if (!toggleBtn) return;
 
-  // Cargar preferencia guardada
   const modoGuardado = localStorage.getItem("modoOscuro");
 
   if (modoGuardado === "true") {
@@ -44,11 +43,14 @@ function inicializarModoOscuro() {
 }
 
 // ================================
-// INICIALIZAR MAPA
+// INICIALIZAR MAPA (FORMOSA)
 // ================================
 function inicializarMapa() {
 
-  map = L.map("map").setView([-34.6037, -58.3816], 12);
+  // Coordenadas de Formosa Capital
+  const formosaCoords = [-26.1775, -58.1781];
+
+  map = L.map("map").setView(formosaCoords, 12);
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "&copy; OpenStreetMap contributors"
@@ -78,10 +80,21 @@ async function cargarEntregas() {
       return;
     }
 
+    const coordenadas = [];
+
     data.entregas.forEach(entrega => {
       agregarFila(entrega);
       agregarMarcador(entrega);
+
+      if (entrega.latitud && entrega.longitud) {
+        coordenadas.push([entrega.latitud, entrega.longitud]);
+      }
     });
+
+    // Ajustar mapa a todas las ubicaciones
+    if (coordenadas.length > 0) {
+      map.fitBounds(coordenadas);
+    }
 
   } catch (error) {
     console.error("Error al cargar entregas:", error);
@@ -147,32 +160,30 @@ function agregarFila(e) {
 }
 
 // ================================
-// AGREGAR MARCADOR AL MAPA
+// AGREGAR MARCADOR CON ÍCONO 📍
 // ================================
 function agregarMarcador(e) {
 
   if (!e.latitud || !e.longitud) return;
 
-  let color;
+  const iconoUbicacion = L.icon({
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+  });
 
-  switch (e.estadoPuntos) {
-    case "pendiente": color = "orange"; break;
-    case "confirmado": color = "green"; break;
-    case "rechazado": color = "red"; break;
-    default: color = "blue";
-  }
-
-  const marker = L.circleMarker([e.latitud, e.longitud], {
-    radius: 8,
-    color: color,
-    fillColor: color,
-    fillOpacity: 0.8
+  const marker = L.marker([e.latitud, e.longitud], {
+    icon: iconoUbicacion
   }).addTo(markersLayer);
 
   marker.bindPopup(`
     <strong>ID:</strong> ${e.idEntrega}<br>
     <strong>Usuario:</strong> ${e.usuario?.nombre ?? "N/A"}<br>
     <strong>Materiales:</strong> ${e.detalleMateriales}<br>
+    <strong>Dirección:</strong> ${e.direccion}<br>
     <strong>Estado:</strong> ${e.estadoPuntos}
   `);
 }
@@ -201,7 +212,7 @@ window.confirmar = async function (id) {
 };
 
 // ================================
-// RECHAZAR
+// RECHAZAR ENTREGA
 // ================================
 window.rechazar = async function (id) {
 
@@ -221,6 +232,7 @@ window.rechazar = async function (id) {
 logoutBtn.addEventListener("click", async () => {
 
   await fetch("http://localhost:3000/usuarios/logout", {
+    method: "POST",
     credentials: "include"
   });
 
