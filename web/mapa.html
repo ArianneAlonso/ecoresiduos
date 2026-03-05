@@ -28,7 +28,7 @@
 
     <ul class="hidden md:flex space-x-6 font-semibold items-center">
       <li><a href="index.html" class="hover:text-green-900">Inicio</a></li>
-      <li><a href="mapa.html" class="text-green-900 dark:text-green-400 font-bold">Mapa</a></li>
+      <li><a href="mapa.html" class="text-green-900 font-bold">Mapa</a></li>
       <li><a href="estadistica.html" class="hover:text-green-900">Estadísticas</a></li>
       <li><a href="consejos.html" class="hover:text-green-900">Consejos</a></li>
       <li><a href="entregas_usuarios.html" class="hover:text-green-900">Entregas</a></li>
@@ -36,7 +36,6 @@
     </ul>
 
     <div class="flex items-center space-x-3">
-      <!-- 🔴 BOTÓN ROJO -->
       <button
         id="logoutBtn"
         class="bg-red-600 hover:bg-red-700 active:scale-95 text-white px-4 py-2 rounded-lg transition transform shadow-md">
@@ -119,7 +118,6 @@
         <ul class="text-sm mt-2 space-y-1">
           <li><a href="./mapa.html" class="hover:underline">Mapa</a></li>
           <li><a href="./estadistica.html" class="hover:underline">Estadísticas</a></li>
-          
         </ul>
       </div>
 
@@ -134,6 +132,10 @@
       © 2025 EcoResiduos. Todos los derechos reservados.
     </div>
   </footer>
+
+  <!-- ✅ TOAST CONTAINER -->
+  <div id="toastContainer"
+       class="fixed top-5 right-5 z-50 space-y-2"></div>
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
