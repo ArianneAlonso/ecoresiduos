@@ -3,40 +3,81 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard</title>
+  <title>Panel Administrador - EcoResiduos</title>
 
   <link rel="stylesheet" href="src/style.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body class="bg-gray-100 min-h-screen">
 
-  <header class="bg-blue-600 text-white p-4 flex justify-between items-center">
-    <h1 id="welcomeAdmin" class="text-xl font-bold">Bienvenido, Admin</h1>
+  <!-- HEADER -->
+  <header class="bg-blue-600 text-white p-4 flex justify-between items-center shadow">
+    <h1 id="welcomeAdmin" class="text-xl font-bold">
+      Panel Administrador
+    </h1>
 
     <nav class="space-x-4 flex items-center">
+
+      <a href="admin.html" class="hover:underline">Inicio</a>
       <a href="dashboard.html" class="hover:underline">Dashboard</a>
       <a href="admin-events.html" class="hover:underline">Eventos</a>
-      <a href="profile.html" class="hover:underline">Ecopuntos</a>
       <a href="rutas.html" class="hover:underline">Rutas</a>
       <a href="contenedores.html" class="hover:underline">Contenedores</a>
-     
 
-      <button id="logoutBtn" 
-              class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded ml-4">
+      <button id="logoutBtn"
+        class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded ml-4">
         Cerrar sesión
       </button>
     </nav>
   </header>
 
-  <main class="p-6 space-y-10">
+  <!-- MAIN -->
+  <main class="p-6 space-y-10 max-w-6xl mx-auto">
 
+    <!-- MENSAJE ERROR -->
     <div id="mensajeError"
-         class="hidden mb-4 p-2 bg-red-200 text-red-800 rounded">
+         class="hidden p-3 bg-red-200 text-red-800 rounded">
     </div>
 
-    <!-- USUARIOS -->
-    <section id="usuariosSection">
+    <!-- CREAR USUARIO -->
+    <section>
+      <h2 class="text-2xl font-bold mb-4">Crear Nuevo Usuario</h2>
+
+      <form id="crearUsuarioForm"
+            class="bg-white p-6 rounded shadow grid md:grid-cols-2 gap-4">
+
+        <input type="text" id="nombre"
+               placeholder="Nombre"
+               class="border p-2 rounded" required>
+
+        <input type="email" id="email"
+               placeholder="Email"
+               class="border p-2 rounded" required>
+
+        <input type="password" id="password"
+               placeholder="Contraseña"
+               class="border p-2 rounded" required>
+
+        <select id="rol"
+                class="border p-2 rounded" required>
+          <option value="usuario">Usuario</option>
+          <option value="administrador">Administrador</option>
+          <option value="operador">Operador</option>
+        </select>
+
+        <input type="text" id="direccion"
+               placeholder="Dirección"
+               class="border p-2 rounded md:col-span-2">
+
+        <button type="submit"
+                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded md:col-span-2">
+          Crear Usuario
+        </button>
+      </form>
+    </section>
+
+    <!-- LISTA USUARIOS -->
+    <section>
       <h2 class="text-2xl font-bold mb-4">Gestión de Usuarios</h2>
 
       <div class="bg-white p-4 rounded shadow overflow-x-auto">
@@ -56,7 +97,11 @@
 
   </main>
 
-  <script type="module" src="src/admin.js"></script>
+  <!-- TOAST CONTAINER -->
+  <div id="toastContainer"
+       class="fixed top-5 right-5 space-y-3 z-50">
+  </div>
 
+  <script type="module" src="src/admin.js"></script>
 </body>
 </html>
