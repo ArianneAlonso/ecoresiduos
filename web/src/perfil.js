@@ -6,6 +6,11 @@ const API_URL = "http://localhost:3000";
 document.addEventListener("DOMContentLoaded", async () => {
 
   //-----------------------------------------------------
+  // 🔹 ICONOS LUCIDE
+  //-----------------------------------------------------
+  createIcons({ icons });
+
+  //-----------------------------------------------------
   // 🔹 MODO OSCURO GLOBAL
   //-----------------------------------------------------
 
@@ -51,7 +56,36 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await loadProfile(perfilContainer);
   renderAchievements(logrosContainer);
+
+  //-----------------------------------------------------
+  // 🔹 CERRAR SESIÓN
+  //-----------------------------------------------------
+
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  logoutBtn?.addEventListener("click", async () => {
+
+    try {
+      const response = await fetch(`${API_URL}/usuarios/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al cerrar sesión");
+      }
+
+      // Redirige al login
+      window.location.href = "login.html";
+
+    } catch (error) {
+      console.error("Error cerrando sesión:", error);
+      alert("No se pudo cerrar sesión");
+    }
+  });
+
 });
+
 
 //-----------------------------------------------------
 // 🔹 CARGAR PERFIL
@@ -78,6 +112,7 @@ async function loadProfile(container) {
     console.error("Error cargando perfil:", error);
   }
 }
+
 
 //-----------------------------------------------------
 // 🔹 RENDER PERFIL
@@ -118,6 +153,7 @@ function renderCard(container, usuario) {
   `;
 }
 
+
 //-----------------------------------------------------
 // 🔹 NIVEL
 //-----------------------------------------------------
@@ -127,6 +163,7 @@ function calcularNivel(puntos) {
   if (puntos >= 50) return "EcoActiva ♻️";
   return "EcoInicial 🌱";
 }
+
 
 //-----------------------------------------------------
 // 🔹 LOGROS
