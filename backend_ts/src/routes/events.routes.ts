@@ -33,7 +33,8 @@ router.get("/user/:id", controller.getEventsByUser);
 // 3. RUTAS SOLO PARA ADMIN / OPERADOR
 // --------------------------------------------------------------------------
 router.use(authorizeRole(["administrador", "operador"]));
-
+router.get(
+  "/:id/usuarios", controller.getUsuariosDeEvento);
 router.post("/", controller.createEvent);
 router.put("/:id", controller.updateEvent);
 router.delete("/:id", controller.deleteEvent);

@@ -42,12 +42,7 @@ router.get(
   SessionValidator.validateSession, // El middleware se usa como método estático
   controller.verificarSesion,
 );
-router.get(
-  "/",
-  SessionValidator.validateSession,
-  authorizeRole(["administrador"]),
-  controller.obtenerUsuarios,
-);
+
 router.get(
   "/me",
   SessionValidator.validateSession,
@@ -57,6 +52,12 @@ router.get(
   "/:id",
   SessionValidator.validateSession,
   controller.obtenerUsuarioPorId,
+);
+router.get(
+  "/",
+  SessionValidator.validateSession,
+  authorizeRole(["administrador"]),
+  controller.obtenerUsuarios,
 );
 router.post("/logout", controller.cerrarSesion);
 

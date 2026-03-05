@@ -217,4 +217,44 @@ export class EventosController {
       return res.status(500).json({ ok: false, mensaje: "Error al eliminar." });
     }
   };
+ // 6. OBTENER USUARIOS DE UN EVENTO
+public getUsuariosDeEvento = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+  try {
+    const idEvento = parseInt(String(req.params.id));
+
+    if (isNaN(idEvento)) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "ID inválido",
+      });
+    }
+
+    const evento = await eventRepository.findOne({
+      where: { idEvento },
+      relations: ["usuarios"],
+    });
+
+    if (!evento) {
+      return res.status(404).json({
+        ok: false,
+        mensaje: "Evento no encontrado",
+      });
+    }
+
+    return res.json({
+      ok: true,
+      data: evento.usuarios || [],
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      ok: false,
+      mensaje: "Error al obtener participantes",
+    });
+  }
+};
 }

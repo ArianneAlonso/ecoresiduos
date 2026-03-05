@@ -38,109 +38,135 @@ map.on("click", (e) => {
 // CARGAR EVENTOS
 // ========================
 async function cargarEventos() {
-  const res = await fetch("http://localhost:3000/eventos", {
-    credentials: "include",
-  });
+  try {
+    const res = await fetch("http://localhost:3000/eventos", {
+      credentials: "include",
+    });
 
-  const data = await res.json();
-  tablaBody.innerHTML = "";
+    if (!res.ok) throw new Error("Error al obtener eventos");
 
-  data.data.forEach((ev) => {
-    const tr = document.createElement("tr");
+    const data = await res.json();
+    tablaBody.innerHTML = "";
 
-    tr.innerHTML = `
-      <td class="p-2">${ev.idEvento}</td>
-      <td class="p-2">${ev.nombre}</td>
-      <td class="p-2">${ev.fecha.split("T")[0]}</td>
-      <td class="p-2">${ev.latitud ?? "--"}</td>
-      <td class="p-2">${ev.longitud ?? "--"}</td>
-      <td class="p-2 flex gap-2">
-        <button onclick='editarEvento(${JSON.stringify(ev)})'
-          class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
-          Editar
-        </button>
+    data.data.forEach((ev) => {
+      const tr = document.createElement("tr");
 
-        <button onclick="eliminarEvento(${ev.idEvento})"
-          class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">
-          Eliminar
-        </button>
-      </td>
-    `;
+      tr.innerHTML = `
+        <td class="p-2">${ev.idEvento}</td>
+        <td class="p-2">${ev.nombre}</td>
+        <td class="p-2">${ev.fecha.split("T")[0]}</td>
+        <td class="p-2">${ev.latitud ?? "--"}</td>
+        <td class="p-2">${ev.longitud ?? "--"}</td>
+        <td class="p-2 flex gap-2">
+          <button onclick='editarEvento(${JSON.stringify(ev)})'
+            class="px-2 py-1 bg-blue-600 text-white rounded">
+            Editar
+          </button>
 
-    tablaBody.appendChild(tr);
-  });
+          <button onclick="eliminarEvento(${ev.idEvento})"
+            class="px-2 py-1 bg-red-600 text-white rounded">
+            Eliminar
+          </button>
+
+          <button onclick="verUsuarios(${ev.idEvento})"
+            class="px-2 py-1 bg-purple-600 text-white rounded">
+            Usuarios
+          </button>
+        </td>
+      `;
+
+      tablaBody.appendChild(tr);
+    });
+
+  } catch (error) {
+    console.error("Error cargando eventos:", error);
+  }
 }
 cargarEventos();
 
 // ========================
-// MODAL ELIMINAR
+// VER USUARIOS
 // ========================
-let eventoAEliminar = null;
+async function verUsuarios(idEvento) {
+  try {
+    const res = await fetch(
+      `http://localhost:3000/eventos/${idEvento}/usuarios`,
+      { credentials: "include" }
+    );
 
-const modal = document.getElementById("modalEliminar");
-const btnCancelar = document.getElementById("cancelarEliminar");
-const btnConfirmar = document.getElementById("confirmarEliminar");
+    if (!res.ok) {
+      alert("No se pudo obtener la lista de usuarios");
+      return;
+    }
 
-function eliminarEvento(id) {
-  eventoAEliminar = id;
-  modal.classList.remove("hidden");
-  modal.classList.add("flex");
+    const data = await res.json();
+
+    const lista = document.getElementById("listaUsuarios");
+    lista.innerHTML = "";
+
+    if (!data.data || data.data.length === 0) {
+      lista.innerHTML = "<li>No hay usuarios inscriptos</li>";
+    } else {
+      data.data.forEach((u) => {
+        const li = document.createElement("li");
+        li.className = "border-b pb-2";
+        li.innerHTML = `<strong>${u.nombre}</strong> - ${u.email}`;
+        lista.appendChild(li);
+      });
+    }
+
+    document.getElementById("modalUsuarios").classList.remove("hidden");
+    document.getElementById("modalUsuarios").classList.add("flex");
+
+  } catch (error) {
+    console.error("Error obteniendo usuarios:", error);
+    alert("Error del servidor");
+  }
 }
 
-btnCancelar.addEventListener("click", () => {
-  eventoAEliminar = null;
-  modal.classList.add("hidden");
-});
-
-btnConfirmar.addEventListener("click", async () => {
-  if (!eventoAEliminar) return;
-
-  try {
-    await fetch(`http://localhost:3000/eventos/${eventoAEliminar}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-
-    cargarEventos();
-  } catch (err) {
-    console.error(err);
-  }
-
-  modal.classList.add("hidden");
-  eventoAEliminar = null;
-});
+function cerrarModalUsuarios() {
+  document.getElementById("modalUsuarios").classList.add("hidden");
+}
 
 // ========================
 // GUARDAR EVENTO
 // ========================
 async function guardarEvento() {
-  const evento = {
-    nombre: nombre.value.trim(),
-    descripcion: descripcion.value || null,
-    fecha: fecha.value,
-    puntosOtorgados: Number(puntosOtorgados.value),
-    latitud: latitud.value ? Number(latitud.value) : null,
-    longitud: longitud.value ? Number(longitud.value) : null,
-  };
+  try {
+    const evento = {
+      nombre: nombre.value.trim(),
+      descripcion: descripcion.value || null,
+      fecha: fecha.value,
+      puntosOtorgados: Number(puntosOtorgados.value),
+      latitud: latitud.value ? Number(latitud.value) : null,
+      longitud: longitud.value ? Number(longitud.value) : null,
+    };
 
-  const editando = Boolean(idEvento.value);
+    const editando = Boolean(idEvento.value);
 
-  const url = editando
-    ? `http://localhost:3000/eventos/${idEvento.value}`
-    : "http://localhost:3000/eventos";
+    const url = editando
+      ? `http://localhost:3000/eventos/${idEvento.value}`
+      : "http://localhost:3000/eventos";
 
-  const method = editando ? "PUT" : "POST";
+    const method = editando ? "PUT" : "POST";
 
-  await fetch(url, {
-    method,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(evento),
-    credentials: "include",
-  });
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(evento),
+      credentials: "include",
+    });
 
-  form.reset();
-  idEvento.value = "";
-  cargarEventos();
+    if (!res.ok) throw new Error("Error al guardar evento");
+
+    form.reset();
+    idEvento.value = "";
+    cargarEventos();
+
+  } catch (error) {
+    console.error("Error guardando evento:", error);
+    alert("Error al guardar evento");
+  }
 }
 
 function editarEvento(ev) {
@@ -154,12 +180,52 @@ function editarEvento(ev) {
 }
 
 // ========================
+// ELIMINAR EVENTO
+// ========================
+let eventoAEliminar = null;
+const modal = document.getElementById("modalEliminar");
+
+function eliminarEvento(id) {
+  eventoAEliminar = id;
+  modal.classList.remove("hidden");
+  modal.classList.add("flex");
+}
+
+document.getElementById("cancelarEliminar").addEventListener("click", () => {
+  modal.classList.add("hidden");
+});
+
+document.getElementById("confirmarEliminar").addEventListener("click", async () => {
+  if (!eventoAEliminar) return;
+
+  try {
+    await fetch(`http://localhost:3000/eventos/${eventoAEliminar}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    cargarEventos();
+  } catch (error) {
+    console.error("Error eliminando:", error);
+  }
+
+  modal.classList.add("hidden");
+  eventoAEliminar = null;
+});
+
+// ========================
 // LOGOUT
 // ========================
 async function logout() {
-  await fetch("http://localhost:3000/usuarios/logout", {
-    credentials: "include",
-  });
+  try {
+    await fetch("http://localhost:3000/usuarios/logout", {
+      method: "POST", // 👈 importante
+      credentials: "include",
+    });
+  } catch (error) {
+    console.error("Error cerrando sesión:", error);
+  }
 
-  window.location.href = "/index.html";
+  // Redirige al login
+  window.location.replace("/login.html");
 }

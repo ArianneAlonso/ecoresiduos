@@ -15,42 +15,23 @@
 
 <body class="bg-gray-100 dark:bg-gray-900 dark:text-gray-200">
 
-  <!-- ================= NAVBAR ================= -->
-  <nav class="w-full bg-green-700 dark:bg-green-900 text-white px-6 py-4 flex justify-between items-center shadow-md">
-
-    <!-- Logo -->
+  <!-- NAVBAR -->
+  <nav class="w-full bg-green-700 text-white px-6 py-4 flex justify-between items-center shadow-md">
     <h1 class="text-xl font-bold">Sistema de Reciclaje</h1>
 
     <!-- Enlaces -->
     <div class="hidden md:flex items-center gap-6 font-medium">
       <a href="admin.html" class="hover:text-green-200 transition">Inicio</a>
-      <a href="/dashboard.html" class="hover:text-green-200 transition">
-        Dashboard
-      </a>
-
-      <!-- Activo -->
-      <a href="/admin-events.html"
-         class="text-yellow-300 font-bold border-b-2 border-yellow-300 pb-1">
-        Eventos
-      </a>
-
-      
-
-      <a href="/rutas.html" class="hover:text-green-200 transition">
-        Rutas
-      </a>
-
-      <a href="/contenedores.html" class="hover:text-green-200 transition">
-        Contenedores
-      </a>
-
+      <a href="/dashboard.html" class="hover:text-green-200 transition">Dashboard</a>
+      <a href="/admin-events.html" class="hover:text-green-200 transition">Eventos</a>
+      <a href="/rutas.html" class="hover:text-green-200 transition">Rutas</a>
+      <a href="/contenedores.html" class="hover:text-green-200 transition">Contenedores</a>
       
     </div>
 
-    <!-- Acciones -->
     <div class="flex items-center gap-4">
       <button id="toggleDark"
-        class="py-1 px-3 bg-white text-gray-900 dark:bg-gray-700 dark:text-white rounded shadow">
+        class="py-1 px-3 bg-white text-gray-900 rounded shadow">
         🌓 Modo
       </button>
 
@@ -61,7 +42,6 @@
     </div>
   </nav>
 
-  <!-- ================= CONTENIDO ================= -->
   <div class="max-w-6xl mx-auto mt-6 p-4">
 
     <!-- FORM -->
@@ -71,39 +51,16 @@
       <form id="eventoForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <input type="hidden" id="idEvento" />
 
-        <div>
-          <label class="font-semibold">Nombre</label>
-          <input id="nombre" class="input" required />
-        </div>
-
-        <div>
-          <label class="font-semibold">Descripción</label>
-          <input id="descripcion" class="input" />
-        </div>
-
-        <div>
-          <label class="font-semibold">Fecha</label>
-          <input type="date" id="fecha" class="input" required />
-        </div>
-
-        <div>
-          <label class="font-semibold">Puntos Otorgados</label>
-          <input type="number" id="puntosOtorgados" class="input" required />
-        </div>
-
-        <div>
-          <label class="font-semibold">Latitud</label>
-          <input id="latitud" class="input" readonly />
-        </div>
-
-        <div>
-          <label class="font-semibold">Longitud</label>
-          <input id="longitud" class="input" readonly />
-        </div>
+        <input id="nombre" placeholder="Nombre" class="input" required />
+        <input id="descripcion" placeholder="Descripción" class="input" />
+        <input type="date" id="fecha" class="input" required />
+        <input type="number" id="puntosOtorgados" placeholder="Puntos" class="input" required />
+        <input id="latitud" placeholder="Latitud" class="input" readonly />
+        <input id="longitud" placeholder="Longitud" class="input" readonly />
       </form>
 
       <div class="mt-4">
-        <h3 class="text-lg font-semibold mb-1">Seleccionar ubicación</h3>
+        <h3 class="font-semibold mb-1">Seleccionar ubicación</h3>
         <div id="map" class="w-full h-72 rounded-lg shadow"></div>
       </div>
 
@@ -123,8 +80,8 @@
             <th class="p-2">ID</th>
             <th class="p-2">Nombre</th>
             <th class="p-2">Fecha</th>
-            <th class="p-2">Latitud</th>
-            <th class="p-2">Longitud</th>
+            <th class="p-2">Lat</th>
+            <th class="p-2">Lng</th>
             <th class="p-2">Acciones</th>
           </tr>
         </thead>
@@ -133,28 +90,41 @@
     </div>
   </div>
 
-  <!-- ================= MODAL ================= -->
+  <!-- MODAL ELIMINAR -->
   <div id="modalEliminar"
-    class="fixed inset-0 backdrop-blur-sm hidden items-center justify-center z-[9999]">
+    class="fixed inset-0 backdrop-blur-sm hidden items-center justify-center z-50">
 
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-96 p-6 border border-gray-200 dark:border-gray-700">
-
-      <h2 class="text-lg font-bold mb-2">Confirmar eliminación</h2>
-
-      <p class="text-sm text-gray-600 dark:text-gray-300 mb-5">
-        ¿Estás segura de que deseas eliminar este evento?
-        Esta acción no se puede deshacer.
-      </p>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-96 p-6">
+      <h2 class="text-lg font-bold mb-4">Confirmar eliminación</h2>
+      <p class="mb-4">¿Seguro que deseas eliminar este evento?</p>
 
       <div class="flex justify-end gap-3">
         <button id="cancelarEliminar"
-          class="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded-lg hover:bg-gray-400 transition">
+          class="px-4 py-2 bg-gray-300 rounded">
           Cancelar
         </button>
 
         <button id="confirmarEliminar"
-          class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+          class="px-4 py-2 bg-red-600 text-white rounded">
           Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL USUARIOS -->
+  <div id="modalUsuarios"
+    class="fixed inset-0 backdrop-blur-sm hidden items-center justify-center z-50">
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-96 p-6">
+      <h2 class="text-lg font-bold mb-4">Usuarios inscriptos</h2>
+
+      <ul id="listaUsuarios" class="text-sm space-y-2"></ul>
+
+      <div class="flex justify-end mt-4">
+        <button onclick="cerrarModalUsuarios()"
+          class="px-4 py-2 bg-gray-500 text-white rounded">
+          Cerrar
         </button>
       </div>
     </div>
