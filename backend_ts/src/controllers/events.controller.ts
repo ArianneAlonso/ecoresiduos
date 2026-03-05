@@ -14,8 +14,11 @@ export class EventosController {
   public getEvents = async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { upcoming } = req.query;
-      // Gracias a AuthenticatedRequest, podemos usar req.user directamente
+
+      // 1. Extraemos el ID del usuario autenticado.
+      // Asegúrate de usar la propiedad exacta que definiste en tu JWT (id o idUsuario)
       const idUsuarioActual = req.user?.id;
+      console.log("ID del usuario autenticado:", idUsuarioActual);
 
       let where: any = {};
       if (upcoming === "true") {
@@ -24,17 +27,24 @@ export class EventosController {
 
       const events = await eventRepository.find({
         where: where,
-        relations: ["usuarios"],
+        relations: ["usuarios"], // Cargamos la relación Many-to-Many
         order: { fecha: "ASC" },
       });
 
-      const data = events.map((event) => ({
-        ...event,
-        inscrito:
-          event.usuarios?.some((u) => u.idUsuario === idUsuarioActual) || false,
-        totalAsistentes: event.usuarios?.length || 0,
-        usuarios: undefined, // Ocultamos la lista por privacidad y peso
-      }));
+      const data = events.map((event) => {
+        // 2. Comparamos asegurándonos de que ambos sean números
+        const estaInscrito =
+          event.usuarios?.some(
+            (u) => Number(u.idUsuario) === Number(idUsuarioActual),
+          ) || false;
+
+        return {
+          ...event,
+          inscrito: estaInscrito,
+          totalAsistentes: event.usuarios?.length || 0,
+          usuarios: undefined, // Limpiamos la respuesta
+        };
+      });
 
       return res.json({ ok: true, data });
     } catch (error: any) {

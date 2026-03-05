@@ -1,5 +1,5 @@
 import { useNavigation } from "@react-navigation/native";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Award,
   CalendarCheck,
@@ -7,6 +7,7 @@ import {
   LogOut,
   MapPin,
   Recycle,
+  PlusCircle,
 } from "lucide-react-native";
 import React from "react";
 import {
@@ -17,6 +18,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import { useAuth } from "../../context/useContext";
 import { Card } from "../components/ui/card";
@@ -24,10 +26,13 @@ import { apiRequest } from "../lib/queryClient";
 
 export default function Home() {
   const navigation = useNavigation<any>();
-  const { user: authUser, logout, isLoading: authLoading } = useAuth();
+  const queryClient = useQueryClient();
+  const { user: authUser, logout } = useAuth();
   const userId = authUser?.id || authUser?.idUsuario;
 
-  // 1. Datos del Usuario
+  // --- QUERIES ---
+
+  // 1. Datos del Usuario (Puntos, Dirección, etc.)
   const { data: userData, refetch: refetchUser } = useQuery({
     queryKey: ["userDetail", userId],
     queryFn: async () => {
@@ -38,7 +43,7 @@ export default function Home() {
     enabled: !!userId,
   });
 
-  // 2. Query para Mis Retiros (Entregas)
+  // 2. Mis Retiros (Entregas de materiales)
   const {
     data: entregas,
     refetch: refetchEntregas,
@@ -53,24 +58,58 @@ export default function Home() {
     enabled: !!userId,
   });
 
-  // 3. Query para Eventos Asistidos (Simulado o Real según tu API)
-  const { data: eventos, refetch: refetchEventos } = useQuery({
+  // 3. Eventos Disponibles para inscribirse (Upcoming)
+  const { data: eventosDisponibles, refetch: refetchDisponibles } = useQuery({
+    queryKey: ["eventos-disponibles"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/eventos?upcoming=true");
+      const json = await res.json();
+      return json.data || []; // Según tu controlador devuelve { ok: true, data: [] }
+    },
+  });
+
+  // 4. Mis Eventos (Donde ya estoy inscrito)
+  const { data: misEventos, refetch: refetchMisEventos } = useQuery({
     queryKey: ["mis-eventos", userId],
     queryFn: async () => {
-      // Ajusta esta ruta según tu backend real
       const res = await apiRequest("GET", `/eventos/user/${userId}`);
       const json = await res.json();
-      return json.eventos || [];
+      return json.data || json.eventos || [];
     },
     enabled: !!userId,
   });
+
+  // --- MUTACIONES / ACCIONES ---
+
+  const handleInscribirse = async (idEvento: number) => {
+    try {
+      const res = await apiRequest("POST", `/eventos/${idEvento}/inscribir`);
+      const json = await res.json();
+
+      if (json.ok) {
+        Alert.alert("¡Éxito!", "Te has inscrito correctamente al evento.");
+        // Refrescamos todo para mover el evento de una lista a otra
+        queryClient.invalidateQueries({ queryKey: ["eventos-disponibles"] });
+        queryClient.invalidateQueries({ queryKey: ["mis-eventos"] });
+        refetchUser();
+      } else {
+        Alert.alert(
+          "Atención",
+          json.mensaje || "No se pudo completar la inscripción.",
+        );
+      }
+    } catch (error) {
+      Alert.alert("Error", "Hubo un problema de conexión.");
+    }
+  };
 
   const displayUser = userData || authUser;
 
   const onRefresh = () => {
     refetchUser();
     refetchEntregas();
-    refetchEventos();
+    refetchDisponibles();
+    refetchMisEventos();
   };
 
   return (
@@ -109,7 +148,7 @@ export default function Home() {
           <View style={styles.locationBadge}>
             <MapPin size={14} color="#3f8f3a" />
             <Text style={styles.locationText}>
-              {displayUser?.direccion || "Sin dirección"}
+              {displayUser?.direccion || "Sin dirección configurada"}
             </Text>
           </View>
 
@@ -129,7 +168,7 @@ export default function Home() {
             </View>
           </Card>
 
-          {/* Acceso Principal */}
+          {/* Acceso Principal a Retiros */}
           <TouchableOpacity
             style={styles.mainAction}
             onPress={() => navigation.navigate("Solicitar Retiro")}
@@ -140,16 +179,50 @@ export default function Home() {
             <View style={{ flex: 1 }}>
               <Text style={styles.actionTitle}>Solicitar Retiro</Text>
               <Text style={styles.actionSub}>
-                Programá tu próxima recolección
+                Programá tu recolección de residuos
               </Text>
             </View>
             <ChevronRight size={20} color="#fff" />
           </TouchableOpacity>
 
+          {/* --- SECCIÓN: DESCUBRIR EVENTOS (Inscripción) --- */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Descubrir Eventos</Text>
+          </View>
+
+          {eventosDisponibles?.filter((e: any) => !e.inscrito).length > 0 ? (
+            eventosDisponibles
+              .filter((e: any) => !e.inscrito)
+              .slice(0, 3)
+              .map((ev: any) => (
+                <View key={ev.idEvento} style={styles.inscribeCard}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.itemTitle}>{ev.nombre}</Text>
+                    <Text style={styles.itemSub}>
+                      📅 {new Date(ev.fecha).toLocaleDateString()} • ⭐{" "}
+                      {ev.puntosOtorgados} pts
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.inscribeButton}
+                    onPress={() => handleInscribirse(ev.idEvento)}
+                  >
+                    <Text style={styles.inscribeButtonText}>Inscribirme</Text>
+                  </TouchableOpacity>
+                </View>
+              ))
+          ) : (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyText}>
+                No hay eventos nuevos por ahora.
+              </Text>
+            </View>
+          )}
+
           {/* --- SECCIÓN: ÚLTIMOS RETIROS --- */}
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Mis últimos retiros</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate("Historial")}>
               <Text style={styles.seeMore}>Ver todo</Text>
             </TouchableOpacity>
           </View>
@@ -178,22 +251,22 @@ export default function Home() {
               </View>
             ))
           ) : (
-            <Text style={styles.emptyText}>No has realizado retiros aún.</Text>
+            <Text style={styles.emptyText}>Aún no has realizado retiros.</Text>
           )}
 
-          {/* --- SECCIÓN: EVENTOS ASISTIDOS --- */}
+          {/* --- SECCIÓN: EVENTOS ASISTIDOS / INSCRITO --- */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Eventos y Talleres</Text>
+            <Text style={styles.sectionTitle}>Mis Eventos</Text>
           </View>
 
-          {eventos?.length > 0 ? (
-            eventos.map((ev: any) => (
-              <View key={ev.id} style={styles.eventCard}>
+          {misEventos?.length > 0 ? (
+            misEventos.map((ev: any) => (
+              <View key={ev.idEvento || ev.id} style={styles.eventCard}>
                 <CalendarCheck size={20} color="#1f5c2e" />
                 <View style={{ flex: 1, marginLeft: 10 }}>
                   <Text style={styles.itemTitle}>{ev.nombre}</Text>
                   <Text style={styles.itemSub}>
-                    Asististe el {new Date(ev.fecha).toLocaleDateString()}
+                    Inscrito para el {new Date(ev.fecha).toLocaleDateString()}
                   </Text>
                 </View>
               </View>
@@ -201,7 +274,7 @@ export default function Home() {
           ) : (
             <View style={styles.emptyCard}>
               <Text style={styles.emptyText}>
-                Inscribite a eventos para sumar más puntos.
+                No estás inscrito en ningún evento.
               </Text>
             </View>
           )}
@@ -270,7 +343,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   pointsLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#9ca3af",
     fontWeight: "700",
     textTransform: "uppercase",
@@ -317,6 +390,24 @@ const styles = StyleSheet.create({
   itemTitle: { fontSize: 15, fontWeight: "600", color: "#374151" },
   itemSub: { fontSize: 12, color: "#9ca3af", marginTop: 2 },
   itemPoints: { fontWeight: "bold", color: "#1f5c2e" },
+  inscribeCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    padding: 15,
+    borderRadius: 18,
+    marginBottom: 10,
+    elevation: 2,
+    borderLeftWidth: 5,
+    borderLeftColor: "#3f8f3a",
+  },
+  inscribeButton: {
+    backgroundColor: "#1f5c2e",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  inscribeButtonText: { color: "#fff", fontSize: 12, fontWeight: "bold" },
   eventCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -326,6 +417,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderLeftWidth: 4,
     borderLeftColor: "#1f5c2e",
+    opacity: 0.9,
   },
   emptyCard: {
     padding: 20,
@@ -342,7 +434,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginTop: 30,
     gap: 8,
-    paddingBottom: 30,
+    paddingBottom: 40,
   },
   logoutText: { color: "#ef4444", fontWeight: "700" },
 });
