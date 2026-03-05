@@ -33,7 +33,7 @@ export default function Home() {
    <ScrollView style={styles.container}>
   <View style={styles.hero}>
     <View style={styles.heroContent}>
-      <Text style={styles.heroTitle}>Hola, {nombreUsuario}</Text>
+      <Text style={styles.heroTitle}>Hola, Abril!</Text>
       <Text style={styles.heroSubtitle}>
         Juntos hacemos un planeta más verde
       </Text>
